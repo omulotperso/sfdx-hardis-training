@@ -82,8 +82,8 @@ The first line under the header reads **Automatically selected target branch is 
 **(1)**. It is not a question, because there is nothing to choose: this project declares
 `integration` as the only branch a contributor may target, in `availableTargetBranches`. [Lab 3.1](../level-3-release-manager/3-1-configure-the-pipeline-up-to-production.md)
 adds `preprod`, where urgent fixes start, and from then on the command asks, offering both.
-Under that line, the first real question already waits, with its two answers **(2)** and **(3)**:
-the next step is about them.
+Under that line, the first real question already waits. Two of its answers, **(2)** and **(3)**, are
+the ones you choose between: the next step is about them.
 
 ![The first question of New User Story, under the line naming the target branch](../../_assets/annotated/vscode/work-new-story-type.png)
 
@@ -96,6 +96,10 @@ step reads it back.
 improvement** **(2)**: US-014 adds something that was not there. **Fix: correct something that is
 broken** **(3)** is for correcting something already delivered. Both answers are worded by this
 project, in `branchPrefixChoices`.
+
+The third answer, **Retrofit**, is the release manager's. It brings a production hotfix back down
+into the pipeline, and [Lab 3.7](../level-3-release-manager/3-7-hotfix-and-retrofit.md) is where it
+is used. Leave it alone here.
 
 The answer becomes the first part of your branch name, `features/` or `fix/`, so anybody looking
 at the list of branches can see at a glance what kind of work is in flight.
@@ -197,6 +201,10 @@ The branch prefix `features/` and the name pattern come from `config/.sfdx-hardi
 Change those two settings and every contributor gets different prompts. That is how a project
 enforces a convention without anybody having to remember it.
 
+<!-- command-links:start -->
+Command documentation: [hardis:work:new](https://sfdx-hardis.cloudity.com/hardis/work/new/)
+<!-- command-links:end -->
+
 </details>
 
 ## What you should see
@@ -204,10 +212,16 @@ enforces a convention without anybody having to remember it.
 Three things, all visible without leaving VS Code:
 
 1. **Bottom left of the status bar**: the branch is now `features/US-014-panels-required`
-2. **The sfdx-hardis panel, Status section**: *Current Org* is your `helios-dev` org
-3. **The DevOps Pipeline panel**: your new branch appears as a small box feeding `integration`
+2. **The sfdx-hardis panel, Status section**: *Current Org* names the scratch org you picked. It
+   shows the org's own name, the one Salesforce invented, rather than the `helios-dev` alias, so
+   check the username rather than looking for the alias you know
+3. **The DevOps Pipeline panel**: `integration` and `uat`, unchanged. **Your new branch is not
+   there, and that is correct.** The diagram draws the major branches and the Pull Requests open
+   against them, and your branch has neither a Pull Request nor an org of its own yet. It appears
+   in [Lab 1.6](1-6-pull-request-deployment-check-and-merge.md), the moment you open the Pull
+   Request
 
-If any of the three disagrees with the others, stop and fix it now rather than after you have built
+If the first two disagree with each other, stop and fix it now rather than after you have built
 something.
 
 ## If it goes wrong
@@ -233,10 +247,15 @@ again and take **Reuse scratch org helios-dev**.
 
 ## Check your work
 
-Welcome page > **Training: Level 1** > **Check my work**, then pick Lab 1.3.
+Welcome page > **Training: Level 1** > **Check my work**, then pick **Lab 1.3**.
 
 It looks for your story branch, `features/US-014-...`, the one thing this lab leaves behind. Your
 work has not reached `integration` yet, and nothing here expects it to: that is [Lab 1.6](1-6-pull-request-deployment-check-and-merge.md).
+
+!!! tip "In Agentforce Vibes, if the panel says the content is blocked"
+    A browser IDE sometimes loses the frame a panel runs in, and shows *the content is blocked*
+    where the command should be. Nothing is wrong with your work: reload the browser tab and click
+    **Check my work** again. It happens to any panel, not only this one.
 
 ## Go deeper
 

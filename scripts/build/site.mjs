@@ -10,9 +10,10 @@
  *   labs/en/level-1-contributor-basics/1-1-*.md  -> site-src/en/level-1-contributor-basics/1-1-*.md
  *   labs/_assets/**                -> site-src/_assets/**
  *   site-theme/**                  -> site-src/theme/**
- *   BACKLOG.md                     -> site-src/BACKLOG.md
- *   training-universe.json stories -> site-src/BACKLOG/US-nnn.md and US-nnn.json
- *   badges/<handle>.md             -> site-src/badges/<handle>.md
+ *   BACKLOG.md, one per locale     -> site-src/BACKLOG.md and site-src/<locale>/BACKLOG.md
+ *   training-universe.json stories -> site-src/[<locale>/]BACKLOG/US-nnn.md, and US-nnn.json once
+ *   badges/<trailblazer>.json      -> site-src/[<locale>/]badges/<trailblazer>.md, built from the record
+ *   badges/<trailblazer>.json      -> site-src/badges/<trailblazer>.json (read by other sites)
  *
  *   node scripts/build/site.mjs
  */
@@ -20,12 +21,71 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { PILL_PALETTE } from "./annotate.mjs";
+import { strings, universeText, fill } from "../lib/strings.mjs";
+import { backlogPage, storyPage, badgesPage, badgePage } from "../lib/pages.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "..", "..");
 const OUT = path.join(ROOT, "site-src");
 
 const universe = JSON.parse(fs.readFileSync(path.join(ROOT, "training-universe.json"), "utf8"));
+
+// The language the site leads with: its home page is the home page of the site,
+// and its backlog, stories and badges keep the URLs the outside world holds.
+const SITE_LANG = "en";
+
+/**
+ * The URL of a page inside the site, from the file that builds it.
+ *
+ *   en/level-1-contributor-basics/1-1-install.md -> en/level-1-contributor-basics/1-1-install/
+ *   fr/index.md                                  -> fr/
+ *   index.md                                     -> (the home page, "")
+ */
+function docUrl(relPath) {
+  const clean = relPath.split(path.sep).join("/").replace(/\.md$/, "");
+  return clean === "index" ? "" : `${clean.replace(/\/index$/, "")}/`;
+}
+
+/**
+ * Where the same page lives in every other language, written into the front
+ * matter of each page that has counterparts.
+ *
+ * The translate widget reads it, and so does the script that keeps that widget
+ * right after an instant navigation. It is written here rather than worked out
+ * in the template because the languages are not laid out alike: the English
+ * labs sit under /en/, while the backlog and the badges, which are also the
+ * ticket and badge URLs the outside world already holds, stay where they are.
+ */
+function alternatesFrontMatter(byLocale) {
+  const lines = ["alternates:"];
+  for (const [lang, url] of Object.entries(byLocale)) {
+    lines.push(`  ${lang}: ${JSON.stringify(url)}`);
+  }
+  return lines.join("\n");
+}
+
+/**
+ * The same page, with its alternates, and its language when it does not say it.
+ *
+ * The labs declare "lang" themselves, and it is the front matter a translator
+ * writes. The generated pages do not, so it is added here: the menu of a page,
+ * its banner and its place in the picker all read it.
+ */
+function withAlternates(content, byLocale, lang) {
+  // Only the front matter counts. An unbounded match reaches into the body, and
+  // a page whose text happens to hold a line starting with "lang:", a YAML
+  // sample or a translated criterion, would be taken as declaring its language:
+  // no lang is injected, the theme falls back to the site language, and a French
+  // page lands in the English menu.
+  const declares = /^---\r?\n(?:(?!---)[\s\S])*?^lang:/m.test(content);
+  const block = [!declares && lang ? `lang: ${lang}` : null, alternatesFrontMatter(byLocale)]
+    .filter(Boolean)
+    .join("\n");
+  if (/^---\r?\n/.test(content)) {
+    return content.replace(/^---\r?\n/, `---\n${block}\n`);
+  }
+  return `---\n${block}\n---\n\n${content}`;
+}
 
 function copyTree(from, to, filter, transform) {
   if (!fs.existsSync(from)) {
@@ -116,19 +176,42 @@ function colorPillReferences(content) {
     });
 }
 
-function foldTroubleshooting(content) {
-  return content.replace(/^## If it goes wrong\r?\n([\s\S]*?)(?=^## |$(?![\s\S]))/m, (whole, body) => {
+/**
+ * The "If it goes wrong" heading, per locale.
+ *
+ * foldTroubleshooting() finds that section by its heading and nothing else, so a
+ * locale that translates the heading declares the translation here. English is
+ * the reference: a locale missing from this map fails the build rather than
+ * quietly shipping its troubleshooting section unfolded.
+ */
+const TROUBLESHOOTING = {
+  en: "If it goes wrong",
+  fr: "En cas de problème"
+};
+
+function foldTroubleshooting(content, heading) {
+  const escaped = heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const section = new RegExp(`^## ${escaped}\\r?\\n([\\s\\S]*?)(?=^## |$(?![\\s\\S]))`, "m");
+  return content.replace(section, (whole, body) => {
     const indented = body
       .replace(/\s+$/, "")
       .split(/\r?\n/)
       .map((line) => (line.trim() === "" ? "" : "    " + line))
       .join("\n");
-    return '??? troubleshoot "If it goes wrong"\n\n' + indented + "\n\n";
+    return `??? troubleshoot "${heading}"\n\n` + indented + "\n\n";
   });
 }
 
-function prepareLab(content, source, target) {
-  return colorPillReferences(foldTroubleshooting(rewriteEscapingLinks(content, source, target)));
+function prepareLab(locale) {
+  const heading = TROUBLESHOOTING[locale];
+  if (!heading) {
+    throw new Error(
+      `labs/${locale}/ has no entry in TROUBLESHOOTING (scripts/build/site.mjs), so its ` +
+      '"If it goes wrong" sections cannot be folded. Add the translated heading there.'
+    );
+  }
+  return (content, source, target) =>
+    colorPillReferences(foldTroubleshooting(rewriteEscapingLinks(content, source, target), heading));
 }
 
 fs.rmSync(OUT, { recursive: true, force: true });
@@ -148,8 +231,40 @@ for (const locale of locales) {
     path.join(localesDir, locale),
     path.join(OUT, locale),
     (name) => name.endsWith(".md"),
-    prepareLab
+    prepareLab(locale)
   );
+}
+
+/** Every markdown file under a folder, as paths relative to it. */
+function markdownUnder(dir, prefix = "") {
+  const out = [];
+  if (!fs.existsSync(dir)) {
+    return out;
+  }
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) {
+      out.push(...markdownUnder(path.join(dir, entry.name), rel));
+    } else if (entry.name.endsWith(".md")) {
+      out.push(rel);
+    }
+  }
+  return out;
+}
+
+// Each lab knows where it is read in the other languages. The folders mirror
+// each other, so the counterpart of a page is its own path under another
+// locale; the home page of the site language is the exception, because it is
+// published at the root and that is the one the menu points at.
+for (const locale of locales) {
+  for (const rel of markdownUnder(path.join(OUT, locale))) {
+    const byLocale = {};
+    for (const other of locales) {
+      byLocale[other] = other === SITE_LANG && rel === "index.md" ? "" : docUrl(`${other}/${rel}`);
+    }
+    const file = path.join(OUT, locale, rel);
+    fs.writeFileSync(file, withAlternates(fs.readFileSync(file, "utf8"), byLocale, locale), "utf8");
+  }
 }
 
 // The English home page is also the site home page. It moves up one level, so
@@ -185,135 +300,296 @@ const pillCss = [
 const themeCss = path.join(OUT, "theme", "stylesheets", "extra.css");
 fs.appendFileSync(themeCss, pillCss, "utf8");
 
-// Everything else the site publishes. These files are read on GitHub too, where
-// front matter renders as a table, so their search title and description are
-// added here, on the way into the site, rather than in the files themselves.
+// TRANSLATION.md is read on GitHub too, where front matter renders as a table,
+// so its search title and description are added here, on the way into the site,
+// rather than in the file itself. It is written for translators, in English,
+// and is not in the menu of any language.
 const PAGE_META = {
-  "BACKLOG.md": {
-    title: "Helios Energy backlog: the User Stories of the course",
-    description: "Every User Story of the Salesforce DevOps training with sfdx-hardis, with its acceptance criteria, its Git branch and the lab that delivers it."
-  },
   "TRANSLATION.md": {
     title: "Translating the Salesforce DevOps training",
     description: "How to translate the labs of the free Salesforce DevOps training with sfdx-hardis, and how translations are kept in step with the English source."
   }
 };
-const frontMatter = (meta) =>
-  meta ? `---\ntitle: ${JSON.stringify(meta.title)}\ndescription: ${JSON.stringify(meta.description)}\n---\n\n` : "";
-for (const file of ["BACKLOG.md", "TRANSLATION.md"]) {
+const frontMatter = (meta) => {
+  if (!meta) {
+    return "";
+  }
+  const lines = ["---", `title: ${JSON.stringify(meta.title)}`];
+  if (meta.description) {
+    lines.push(`description: ${JSON.stringify(meta.description)}`);
+  }
+  // The picture a share of this page shows. Only a badge page sets one; every
+  // other page falls back to the card of the course, in main.html.
+  if (meta.social) {
+    lines.push(`social: ${JSON.stringify(meta.social)}`);
+  }
+  // The title of that share, when the page title alone says too little: a badge
+  // page is titled with a name, and a preview that reads "Olivier Mulot" says
+  // nothing about a badge
+  if (meta.socialTitle) {
+    lines.push(`social_title: ${JSON.stringify(meta.socialTitle)}`);
+  }
+  return `${lines.join("\n")}\n---\n\n`;
+};
+for (const file of ["TRANSLATION.md"]) {
   const source = path.join(ROOT, file);
   if (fs.existsSync(source)) {
     fs.writeFileSync(path.join(OUT, file), frontMatter(PAGE_META[file]) + fs.readFileSync(source, "utf8"), "utf8");
   }
 }
-// On the site, the story links of the backlog stay on the site being built
-const backlogOut = path.join(OUT, "BACKLOG.md");
-if (fs.existsSync(backlogOut)) {
-  const siteStoryLink = new RegExp(`\\]\\(${universe.course.site.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/BACKLOG/(US-\\d+)/\\)`, "g");
-  fs.writeFileSync(backlogOut, fs.readFileSync(backlogOut, "utf8").replace(siteStoryLink, "](BACKLOG/$1.md)"), "utf8");
+
+/**
+ * Where a page of the backlog or the badges is published, per locale.
+ *
+ * The site language keeps the paths it has always had: /BACKLOG/US-024/ is the
+ * ticket URL the course configuration builds from a story id, and /badges/ is
+ * the page learners share. Every other language hangs under its own folder.
+ */
+const localePrefix = (locale) => (locale === SITE_LANG ? "" : `${locale}/`);
+
+/** The backlog, one page per language, and one page per story under it. */
+function backlogPages() {
+  let written = 0;
+  for (const locale of locales) {
+    const s = strings(locale);
+    const text = universeText(locale, universe);
+    const dir = path.join(OUT, localePrefix(locale).replace(/\/$/, ""));
+    fs.mkdirSync(dir, { recursive: true });
+    const alternates = {};
+    for (const other of locales) {
+      alternates[other] = `${localePrefix(other)}BACKLOG/`;
+    }
+    const page = backlogPage({
+      universe,
+      s,
+      text,
+      // On the site, a story id points at its page next door
+      storyLink: (story) => `BACKLOG/${story.id}.md`,
+      generatedBy: "scripts/build/site.mjs"
+    });
+    fs.writeFileSync(
+      path.join(dir, "BACKLOG.md"),
+      withAlternates(frontMatter({ title: s.backlog.title, description: s.backlog.description }) + page, alternates, locale),
+      "utf8"
+    );
+    written++;
+  }
+  return written;
+}
+const backlogs = backlogPages();
+
+/** The title a lab of this locale gives itself, which is what a link to it should read. */
+function labLinkText(locale, level, lab) {
+  if (locale !== SITE_LANG) {
+    const file = path.join(ROOT, "labs", locale, level.slug, `${lab.slug}.md`);
+    if (fs.existsSync(file)) {
+      const match = fs.readFileSync(file, "utf8").match(/^title:\s*"?(.+?)"?\s*$/m);
+      if (match) {
+        return match[1];
+      }
+    }
+  }
+  return fill(strings(locale).story.labLink, { level: level.level, lab: lab.lab, title: lab.title });
 }
 
 /**
- * One page per User Story, BACKLOG/<id>/, and its JSON twin, BACKLOG/<id>.json.
+ * One page per User Story, per language, and one JSON twin per story.
  *
  * The page is where a ticket link lands: config/.sfdx-hardis.yml builds it from the id alone
- * (genericTicketingProviderUrlBuilder). The JSON is what sfdx-hardis reads to write the story
- * title next to that link in Pull Request comments and release notes
- * (genericTicketingProviderDetailsUrlBuilder): the course has no ticketing tool, and a static
- * file per story is all the generic provider needs.
+ * (genericTicketingProviderUrlBuilder), which is why the site language keeps /BACKLOG/<id>/.
+ * The JSON is what sfdx-hardis reads to write the story title next to that link in Pull Request
+ * comments and release notes (genericTicketingProviderDetailsUrlBuilder): the course has no
+ * ticketing tool, and a static file per story is all the generic provider needs. It is written
+ * once, for the site language, because that is the URL the configuration holds.
  */
 function storyPages() {
-  const dir = path.join(OUT, "BACKLOG");
-  fs.mkdirSync(dir, { recursive: true });
   let count = 0;
-  for (const story of universe.userStories) {
-    const owner = universe.cast.find((person) => person.handle === story.author);
-    const level = universe.levels.find((one) => one.level === story.level);
-    const lab = level?.labs.find((one) => one.lab === story.lab);
-    const labLink = lab ? `[Lab ${story.level}.${story.lab} - ${lab.title}](../en/${level.slug}/${lab.slug}.md)` : `Lab ${story.level}.${story.lab}`;
-    const page = [
-      frontMatter({ title: `${story.id} - ${story.title}`, description: story.story }) + `# ${story.id} - ${story.title}`,
-      "",
-      `> ${story.story}`,
-      "",
-      "Acceptance criteria:",
-      "",
-      ...story.acceptance.map((criterion) => `- ${criterion}`),
-      "",
-      "| | |",
-      "|---|---|",
-      `| Owner | ${owner ? owner.name : story.author} |`,
-      `| Branch | \`${story.branch}\` |`,
-      `| Delivered in | ${labLink} |`,
-      "",
-      "[All the stories of the backlog](../BACKLOG.md)",
-      ""
-    ].join("\n");
-    fs.writeFileSync(path.join(dir, `${story.id}.md`), page, "utf8");
-    const details = {
-      id: story.id,
-      subject: story.title,
-      url: `${universe.course.site}/BACKLOG/${story.id}/`,
-      owner: owner ? owner.name : story.author,
-      branch: story.branch,
-      lab: `${story.level}.${story.lab}`
-    };
-    fs.writeFileSync(path.join(dir, `${story.id}.json`), JSON.stringify(details, null, 2) + "\n", "utf8");
-    count++;
+  for (const locale of locales) {
+    const s = strings(locale);
+    const text = universeText(locale, universe);
+    const dir = path.join(OUT, localePrefix(locale), "BACKLOG");
+    fs.mkdirSync(dir, { recursive: true });
+    for (const story of universe.userStories) {
+      const owner = universe.cast.find((person) => person.handle === story.author);
+      const level = universe.levels.find((one) => one.level === story.level);
+      const lab = level?.labs.find((one) => one.lab === story.lab);
+      // The labs of the site language sit under en/, the others under their own folder
+      const labPath = locale === SITE_LANG ? `../${locale}/${level?.slug}/` : `../${level?.slug}/`;
+      const labLink = lab
+        ? `[${labLinkText(locale, level, lab)}](${labPath}${lab.slug}.md)`
+        : `${s.backlog.lab} ${story.level}.${story.lab}`;
+      const one = text.story(story);
+      const alternates = {};
+      for (const other of locales) {
+        alternates[other] = `${localePrefix(other)}BACKLOG/${story.id}/`;
+      }
+      const page = storyPage({ universe, s, text, story, owner, labLink, backlogLink: "../BACKLOG.md" });
+      fs.writeFileSync(
+        path.join(dir, `${story.id}.md`),
+        withAlternates(frontMatter({ title: `${story.id} - ${one.title}`, description: one.story }) + page, alternates, locale),
+        "utf8"
+      );
+      count++;
+      if (locale !== SITE_LANG) {
+        continue;
+      }
+      const details = {
+        id: story.id,
+        subject: story.title,
+        url: `${universe.course.site}/BACKLOG/${story.id}/`,
+        owner: owner ? owner.name : story.author,
+        branch: story.branch,
+        lab: `${story.level}.${story.lab}`
+      };
+      fs.writeFileSync(path.join(dir, `${story.id}.json`), JSON.stringify(details, null, 2) + "\n", "utf8");
+    }
   }
   return count;
 }
 const stories = storyPages();
 
-const linkMap = path.join(ROOT, "labs", "link-map.en.md");
-if (fs.existsSync(linkMap)) {
-  fs.mkdirSync(path.join(OUT, "labs"), { recursive: true });
-  fs.copyFileSync(linkMap, path.join(OUT, "labs", "link-map.en.md"));
-}
+// The link maps, labs/link-map.<locale>.md, are not published. They are a
+// maintainer artifact: the Trailmix steps are built from them rather than from
+// URLs retyped by hand, and check-links.mjs fetches every URL they hold, so a
+// renamed documentation page fails CI here. Both read the file in the
+// repository, where it renders as a table on GitHub. On the site it was a
+// second copy of the menu, followed by a paragraph about CI.
 
-// Badge pages, plus an index of them
+// The badge images. The pages are built from the records below, in every
+// language, so a badge claimed a year ago gains a new language on the next site
+// build and a claim never has to write a page per locale.
 const badgesDir = path.join(ROOT, "badges");
-const badgePages = copyTree(badgesDir, path.join(OUT, "badges"), (name) => name.endsWith(".md") && !name.startsWith("_"));
 copyTree(path.join(badgesDir, "img"), path.join(OUT, "badges", "img"), (name) => name.endsWith(".svg"));
+// The card a share shows, one per holder, written by scripts/badges/social.mjs.
+// LinkedIn does not render SVG, so this one is a PNG and it is committed like
+// the badge image itself.
+copyTree(path.join(badgesDir, "social"), path.join(OUT, "badges", "social"), (name) => name.endsWith(".png"));
+// The square picture a badge page offers to attach to a post, from the same script
+copyTree(path.join(badgesDir, "post"), path.join(OUT, "badges", "post"), (name) => name.endsWith(".png"));
+// The records are published as they are, at /badges/<trailblazer>.json, so that
+// anything holding a Trailblazer username can ask what that person earned with
+// one GET. The Trailhead Banner project is the reason this exists. GitHub Pages
+// serves them with Access-Control-Allow-Origin: *, so a browser can read them.
+const badgeRecords = copyTree(badgesDir, path.join(OUT, "badges"), (name) => name.endsWith(".json") && !name.startsWith("_"));
 
-const handles = fs.existsSync(badgesDir)
-  ? fs
-    .readdirSync(badgesDir)
-    .filter((name) => name.endsWith(".json"))
-    .map((name) => name.replace(/\.json$/, ""))
-    .sort()
-  : [];
+// One row per badge holder, read from the records the claim wrote. The name and
+// the Trailblazer username are stored there on purpose: the site build never
+// calls the Trailblazer API, so a build is not at the mercy of it being up, and
+// a badge keeps reading right if a profile later goes private.
+const holders = (fs.existsSync(badgesDir)
+  ? fs.readdirSync(badgesDir).filter((name) => name.endsWith(".json"))
+  : []
+)
+  .map((file) => {
+    // The file name is the Trailblazer username: it keys the page, the record
+    // and the images. The GitHub handle is inside, as the recipient.
+    const key = file.replace(/\.json$/, "");
+    let record = {};
+    try {
+      record = JSON.parse(fs.readFileSync(path.join(badgesDir, file), "utf8"));
+    } catch (error) {
+      console.warn(`badges/${file} could not be read, listing it by its key: ${error.message}`);
+    }
+    const badges = Array.isArray(record.badges) ? record.badges : [];
+    const highest = badges.reduce((best, badge) => (best === null || badge.level > best.level ? badge : best), null);
+    const trimmed = (value) => (typeof value === "string" && value.trim() ? value.trim() : null);
+    return {
+      key,
+      // A record written before names were stored has only its key
+      name: trimmed(record.name) || key,
+      recipient: trimmed(record.recipient),
+      trailblazer: trimmed(record.trailblazer) || key,
+      highest,
+      record
+    };
+  })
+  .sort((a, b) => a.name.localeCompare(b.name, "en", { sensitivity: "base" }) || a.key.localeCompare(b.key));
 
-const badgeIndex = [
-  frontMatter({
-    title: "Salesforce DevOps training badges",
-    description: "The learners who finished a level of the free Salesforce DevOps training with sfdx-hardis, checked by a job that read their public repository."
-  }) + "# Badges",
-  "",
-  "Everybody who finished a level of this course and claimed it.",
-  "",
-  "It is a badge, not a certification: there is no exam here. What it says is that a job read the",
-  "person's public repository and found the work.",
-  "",
-  handles.length === 0
-    ? "Nobody has claimed a badge yet. Be the first."
-    : handles.map((handle) => `- [${handle}](${handle}.md)`).join("\n"),
-  "",
-  "## Claim yours",
-  "",
-  "In VS Code: Welcome page > **Training: Level N** > **Claim my badge**. It checks the whole level",
-  "on your machine first, then opens the claim form with everything already filled in, and you tick",
-  "the three boxes and submit.",
-  "",
-  "Each level also asks you to star the open source project it teaches, which the command offers to",
-  "do and the audit checks.",
-  "",
-  `You can also [open a claim issue](https://github.com/${universe.course.upstreamRepo}/issues/new/choose) by hand,`,
-  "with your level, your Trailblazer username, the URL of your public fork and the receipt lines",
-  "printed by **Check my work**.",
-  ""
-].join("\n");
-fs.mkdirSync(path.join(OUT, "badges"), { recursive: true });
-fs.writeFileSync(path.join(OUT, "badges", "index.md"), badgeIndex, "utf8");
+/**
+ * The badges index and one page per holder, in every language.
+ *
+ * The images and the machine readable records stay where they have always been,
+ * under /badges/: a learner shares the page, but the Trailhead Banner project
+ * reads /badges/<trailblazer>.json, and those URLs do not move for a language.
+ */
+function badgePages() {
+  let written = 0;
+  const claimUrl = `https://github.com/${universe.course.upstreamRepo}/issues/new/choose`;
+  for (const locale of locales) {
+    const s = strings(locale);
+    const dir = path.join(OUT, localePrefix(locale), "badges");
+    fs.mkdirSync(dir, { recursive: true });
+    // One copy of each image, under the site language, reached from anywhere
+    const images = locale === SITE_LANG ? "img" : "../../badges/img";
+    // The example Trailhead banner lives with the lab assets, one tree up from
+    // the badges folder of the site language and two up from any other.
+    const exampleBanner = `${locale === SITE_LANG ? ".." : "../.."}/_assets/badges/trailhead-banner.png`;
 
-console.log(`site-src assembled: ${pages} lab page(s), ${stories} story page(s), ${assets} asset(s), ${themeFiles} theme file(s), ${badgePages} badge page(s), ${locales.length} locale(s)`);
+    const indexAlternates = {};
+    for (const other of locales) {
+      indexAlternates[other] = `${localePrefix(other)}badges/`;
+    }
+    const index = badgesPage({
+      s,
+      holders,
+      badgeHref: (key) => `${key}.md`,
+      badgeImage: (key, level) => `${images}/${key}-level-${level}.svg`,
+      claimUrl,
+      recordUrlPattern: `${universe.course.site}/badges/<trailblazer-username>.json`,
+      bannerExample: exampleBanner
+    });
+    fs.writeFileSync(
+      path.join(dir, "index.md"),
+      withAlternates(frontMatter({ title: s.badges.title, description: s.badges.description }) + index, indexAlternates, locale),
+      "utf8"
+    );
+    written++;
+
+    for (const holder of holders) {
+      const alternates = {};
+      for (const other of locales) {
+        alternates[other] = `${localePrefix(other)}badges/${holder.key}/`;
+      }
+      const pageUrl = `${universe.course.site}/${localePrefix(locale)}badges/${holder.key}/`;
+      // The picture to attach to a post, when the claim could draw it
+      const post = fs.existsSync(path.join(badgesDir, "post", `${holder.key}.png`));
+      const page = badgePage({
+        s,
+        holder,
+        badgeImage: (level) => `${images}/${holder.key}-level-${level}.svg`,
+        // The banner version: one file per level, next to the badge images
+        bannerImage: (level) => `${images}/banner-level-${level}.svg`,
+        postImage: post ? `${images.replace(/img$/, "post")}/${holder.key}.png` : null,
+        // The course in the language of the page, which is the one a reader of
+        // the post most likely reads too
+        courseUrl: `${universe.course.site}/${localePrefix(locale)}`,
+        pageUrl,
+        recordUrl: `${universe.course.site}/badges/${holder.key}.json`
+      });
+      // The card of this holder when there is one, the course card otherwise:
+      // a badge awarded before social.mjs existed has none until it is re-run
+      const card = path.join(badgesDir, "social", `${holder.key}.png`);
+      const social = fs.existsSync(card) ? `badges/social/${holder.key}.png` : null;
+      const highest = holder.highest ? holder.highest.name : s.badges.heading;
+      fs.writeFileSync(
+        path.join(dir, `${holder.key}.md`),
+        withAlternates(
+          frontMatter({
+            title: holder.name,
+            description: fill(s.badge.description, { name: holder.name, badge: highest }),
+            social,
+            socialTitle: fill(s.badge.shareTitle, { name: holder.name, badge: highest })
+          }) + page,
+          alternates,
+          locale
+        ),
+        "utf8"
+      );
+      written++;
+    }
+  }
+  return written;
+}
+const badgePageCount = badgePages();
+
+console.log(`site-src assembled: ${pages} lab page(s), ${backlogs} backlog page(s), ${stories} story page(s), ${assets} asset(s), ${themeFiles} theme file(s), ${badgePageCount} badge page(s), ${badgeRecords} badge record(s), ${locales.length} locale(s)`);

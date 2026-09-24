@@ -88,6 +88,33 @@ function currentHandle() {
   return user?.login || null;
 }
 
+/**
+ * A commit needs a name and an email, and a machine that has never made one has
+ * neither. VS Code cannot set them, and this course sends nobody to a terminal,
+ * so the GitHub account gh is signed in as fills them in.
+ *
+ * In this clone only, never with --global: nothing outside the course changes.
+ * The address is the noreply one GitHub gives every account, so a learner's real
+ * address never ends up in a public commit they did not think about.
+ */
+function ensureGitIdentity() {
+  const configured = (key) => gitOut(["config", "--get", key]) !== "";
+  if (configured("user.name") && configured("user.email")) {
+    return;
+  }
+  const user = ghJson(["api", "user"]);
+  if (!user?.login) {
+    warn("Git has no name and email yet, and your GitHub account could not be read to fill them in.");
+    info("  Your first commit will be refused. Sign in to GitHub again, then click this command again.");
+    return;
+  }
+  const name = user.name || user.login;
+  const email = `${user.id}+${user.login}@users.noreply.github.com`;
+  run("git", ["config", "user.name", name], { quiet: true, capture: true });
+  run("git", ["config", "user.email", email], { quiet: true, capture: true });
+  ok(`Your commits in this folder are made as ${c.bold(name)} <${email}>.`);
+}
+
 // ------------------------------------------------------------ the Dev Hub org
 /**
  * The Developer Edition org the learner connected, when there is nothing to choose.
@@ -100,7 +127,7 @@ export async function findDevHub(orgs, preselected) {
   const { devHub } = trainingOrgs();
   const candidates = orgs.filter((o) => !o.isScratch);
   if (preselected) {
-    return select("Which org is your Developer Edition org?", orgChoices(candidates), preselected);
+    return select("Which org is your Developer Edition org?", orgChoices(candidates), preselected, "org");
   }
   const byAlias = candidates.find((o) => (o.aliases || []).includes(devHub.alias));
   if (byAlias) {
@@ -401,7 +428,22 @@ async function ensureFork(handle) {
     // work. The web form calls it "Copy the main branch only".
     const res = run("gh", ["repo", "fork", UPSTREAM, "--clone=false", "--remote=false"]);
     if (res.code !== 0) {
-      abort("The fork could not be created.", "Fork it by hand on GitHub, then run this again.");
+      // Three lines and a link beat "fork it by hand": the web form has one box
+      // that has to be unticked, and a learner who misses it gets a fork the
+      // course cannot work in.
+      warn("The fork could not be created from here.");
+      info("");
+      info("  GitHub refused it. The usual reasons are a repository of that name already");
+      info("  in your account, an organisation that does not allow forks, or a sign-in");
+      info("  without permission to create repositories.");
+      info("");
+      info("  Make it yourself, it is one screen:");
+      info(`    1. Open ${c.cyan(`https://github.com/${UPSTREAM}/fork`)}`);
+      info("    2. Leave the owner on your own account and the name as it is");
+      info(`    3. ${c.bold('Untick "Copy the main branch only"')}. The course needs every branch`);
+      info("    4. Click Create fork, and wait for the page to land on your copy");
+      info("");
+      abort("The fork could not be created.", "Make it as described above, then run this again.");
     }
   }
 
@@ -452,32 +494,69 @@ export function ensurePipelineBranches() {
 }
 
 // ------------------------------------------------------------- actions on
+/**
+ * Every workflow of the fork that GitHub parked, put back to work.
+ *
+ * A fork arrives with Actions allowed and its workflows in `disabled_fork`,
+ * which is a different switch from the repository permission above and the one
+ * the banner flips. It has an API of its own, so this does not need the banner:
+ * enable each parked workflow, then read them back.
+ *
+ * Returns the names still parked, empty when they all run.
+ */
+function enableForkWorkflows(slug) {
+  const listed = ghJson(["api", `repos/${slug}/actions/workflows`, "--paginate"]);
+  const workflows = listed?.workflows || [];
+  for (const workflow of workflows) {
+    if (workflow.state === "active") {
+      continue;
+    }
+    run("gh", ["api", "-X", "PUT", `repos/${slug}/actions/workflows/${workflow.id}/enable`], {
+      capture: true,
+      quiet: true
+    });
+  }
+  const after = ghJson(["api", `repos/${slug}/actions/workflows`, "--paginate"]);
+  // A read that fails says nothing either way, and claiming success on it is
+  // how a learner ends up with a Pull Request nothing ever checks
+  if (!after?.workflows) {
+    return workflows.filter((workflow) => workflow.state !== "active").map((workflow) => workflow.name);
+  }
+  return after.workflows.filter((workflow) => workflow.state !== "active").map((workflow) => workflow.name);
+}
+
 function ensureActions(slug) {
   step(2, "Actions turned on");
 
   const permissions = ghJson(["api", `repos/${slug}/actions/permissions`]);
-  if (permissions?.enabled === true) {
-    ok("Actions are on.");
+  if (permissions?.enabled !== true) {
+    run("gh", [
+      "api", "-X", "PUT", `repos/${slug}/actions/permissions`,
+      "-F", "enabled=true", "-f", "allowed_actions=all"
+    ], { capture: true, quiet: true });
+  }
+
+  const enabled = ghJson(["api", `repos/${slug}/actions/permissions`])?.enabled === true;
+  const parked = enabled ? enableForkWorkflows(slug) : [];
+
+  if (enabled && parked.length === 0) {
+    ok("Actions are on, and every workflow of your fork runs.");
     return true;
   }
 
-  const res = run("gh", [
-    "api", "-X", "PUT", `repos/${slug}/actions/permissions`,
-    "-F", "enabled=true", "-f", "allowed_actions=all"
-  ], { capture: true, quiet: true });
-
-  const after = ghJson(["api", `repos/${slug}/actions/permissions`]);
-  if (res.code === 0 && after?.enabled === true) {
-    ok("Actions are on.");
-    return true;
-  }
-
-  // GitHub disables workflows on a new fork behind a banner that has no API.
-  // Saying so is better than reporting a success nobody can verify.
-  warn("Actions could not be turned on from here.");
-  info(`    Open https://github.com/${slug}/actions and click`);
+  // Two different switches, and the second one is the one a learner meets as an
+  // empty Checks tab on a Pull Request that looks perfectly fine.
+  warn(
+    enabled
+      ? `Actions are on, but ${parked.length} workflow(s) are still parked: ${parked.join(", ")}.`
+      : "Actions could not be turned on from here."
+  );
+  info(`    Open ${c.cyan(`https://github.com/${slug}/actions`)} and click`);
   info(`    ${c.bold("I understand my workflows, go ahead and enable them")}.`);
   info("    It is one click, and then this command has nothing left to do.");
+  info("");
+  info("    If a Pull Request is already open, its checks will not start on their own");
+  info(`    afterwards. Run ${c.bold("Training > Trigger my workflows")} once and they will.`);
   return false;
 }
 
@@ -655,12 +734,13 @@ export default async function init(args) {
   info(c.dim("already there, and nobody asks a new contributor to build them on their first day."));
   info("");
 
-  ensureGh();
+  await ensureGh();
   const handle = currentHandle();
   if (!handle) {
     abort("Could not read your GitHub account.", "Click Set up my training environment again.");
   }
   info(`Signed in to GitHub as ${c.bold(handle)}.`);
+  ensureGitIdentity();
 
   const orgs = connectedOrgs().filter((o) => o.connected);
   if (orgs.filter((o) => !o.isScratch).length === 0) {

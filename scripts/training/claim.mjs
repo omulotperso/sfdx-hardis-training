@@ -12,12 +12,65 @@ import {
   ROOT, c, title, info, ok, warn, fail, abort, universe, readProgress, writeProgress,
   gitOut, repoSlug, githubHandle, run, select, input, confirm, ensureGh, openUrl
 } from "../lib/util.mjs";
+import { fetchTrailblazerProfile } from "../badges/trailblazer.mjs";
 import { makeContext, rulesForLevel } from "../verify/rules.mjs";
 import { runRules } from "../verify/check.mjs";
 
 /** The repository a level asks you to star, and what it is. */
 function starOf(levelDef) {
   return levelDef.star || null;
+}
+
+/**
+ * The Trailblazer username, checked against the real profile before the claim
+ * is opened.
+ *
+ * The suggestion is the GitHub handle, which for most people is not their
+ * Trailblazer username: accepting it unchecked is how a badge ends up linking to
+ * a profile that does not exist. The audit refuses such a claim anyway, so
+ * catching it here saves a round trip through an issue.
+ *
+ * Three tries, then it goes through: an API that answers "no" for a name that is
+ * really there must not be able to stop somebody claiming what they earned, and
+ * the audit says the same thing again with more room to explain it.
+ */
+async function askTrailblazer(suggestion) {
+  let value = suggestion;
+  // Said before the question, not only after a miss: most people have never
+  // had to type this, and the suggestion below is their GitHub handle, which
+  // looks plausible enough to accept without checking.
+  info("");
+  info("  Where to find your Trailblazer username:");
+  info("    1. Sign in at https://trailhead.salesforce.com");
+  info("    2. Click your picture, top right, then View Profile");
+  info("    3. The address of that page ends with it:");
+  info(c.dim("       https://www.salesforce.com/trailblazer/mytrailblazerusername"));
+  info(c.dim("       the username there is: mytrailblazerusername"));
+  info("  It is not your email and not your Salesforce username. If you have never");
+  info("  set one, that profile page is also where you choose it.");
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const answer = (await input("\n  Your Trailblazer username, shown on your badge page:", value)).trim();
+    const profile = await fetchTrailblazerProfile(answer);
+    if (profile.state === "public") {
+      info(c.dim(`    Trailhead profile: ${profile.name || answer}`));
+      return answer;
+    }
+    if (profile.state !== "missing") {
+      // private, or the API could not be reached: neither is the learner's problem
+      return answer;
+    }
+    warn(`  No public Trailblazer profile answers to "${answer}".`);
+    info("  It is the last part of your own profile URL, not your email and not your");
+    info("  Salesforce username:");
+    info(c.dim("    https://www.salesforce.com/trailblazer/mytrailblazerusername"));
+    // The same answer coming back means nothing is typing: stop asking.
+    if (answer === value || attempt === 3) {
+      warn("  Carrying on with it. The audit checks this too, and will explain it there.");
+      return answer;
+    }
+    value = answer;
+  }
+  return value;
 }
 
 /** true when the signed-in account stars owner/repo. 204 means yes, 404 means no. */
@@ -105,7 +158,7 @@ export default async function claim(args) {
   }
 
   // ------------------------------------------------------------- the account
-  ensureGh();
+  await ensureGh();
 
   const slug = repoSlug();
   if (!slug) {
@@ -149,10 +202,7 @@ export default async function claim(args) {
 
   // -------------------------------------------------------------- the fields
   const progress = readProgress();
-  const trailblazer = await input(
-    "\n  Your Trailblazer username, shown on your badge page:",
-    progress.trailblazer || githubHandle() || ""
-  );
+  const trailblazer = await askTrailblazer(progress.trailblazer || githubHandle() || "");
   progress.trailblazer = trailblazer;
   writeProgress(progress);
 
@@ -185,12 +235,17 @@ export default async function claim(args) {
   info(`    Repository   https://github.com/${slug}`);
   info(`    Receipts     ${receipts ? `${receipts.split("\n").length} line(s)` : "none recorded"}`);
   info("");
-  info("  A browser opens on the claim form, filled in. Tick the three boxes and");
-  info("  click Submit: they say your repository is public and your handle becomes");
-  info("  public too, which is your decision and nobody else's.");
+  info(`  A browser opens on the claim form, filled in except for one field. Pick`);
+  info(`  ${c.bold(`Level ${level} - ${levelDef.name}`)} in the ${c.bold("Level")} dropdown: GitHub does not prefill a`);
+  info("  dropdown from a link, so it arrives empty and the form refuses to submit.");
+  info("  Then tick the three boxes and click Submit: they say your repository is");
+  info("  public and your handle becomes public too, which is your decision and");
+  info("  nobody else's.");
 
   if (!openUrl(url)) {
-    warn("The browser did not open. Copy this address into it:");
+    // A browser IDE has no browser of its own to open: the address is the whole
+    // of the answer there, and it is clickable where this is printed.
+    warn("No browser opened from here. Click the address below, or copy it into one:");
   }
   info("");
   info(`  ${c.cyan(url)}`);
