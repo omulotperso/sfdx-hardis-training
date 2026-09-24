@@ -1,0 +1,70 @@
+{#-
+  The language picker in the header, on the flag of each language, pointing at
+  the same page in that language.
+
+  Every page carries in its front matter where it is read in each language,
+  under "alternates", written by scripts/build/site.mjs. It is not worked out
+  here because the languages are not laid out alike: the English labs sit under
+  /en/, while the backlog, the story pages and the badges keep the URLs the
+  outside world already holds, and the home page of the site is the English one.
+
+  A page with no counterpart in that language, TRANSLATION.md for one, falls
+  back to the home page of the language, which course-site.yml holds next to its
+  name and its flag.
+
+  The button carries the flag of the page being read, so the picker says which
+  language you are in before it is opened.
+
+  Two things keep this working that are not visible here:
+
+  - the list is rebuilt by site-theme/javascripts/language-switch.js after an
+    instant navigation, which swaps the page under a header it leaves alone;
+    that script is also what remembers the choice in a cookie;
+  - the languages are declared under extra.languages and not extra.alternate.
+    Under that name the theme reads each entry as the root of a separate site,
+    asks it for a sitemap.xml it does not have, and takes the click over.
+
+  This is a copy of the Zensical partial of the same name, which says not to
+  edit it: custom_dir is how a theme partial is replaced.
+-#}
+{% set page_lang = (page.meta | d({}, true)).lang | d(config.theme.language | d("en")) %}
+{% set alternates = (page.meta | d({}, true)).alternates | d({}, true) %}
+{% set _ = namespace(flag = none, name = none) %}
+{% for alt in config.extra.languages %}
+  {% if alt.lang == page_lang %}
+    {% set _.flag = alt.flag %}
+    {% set _.name = alt.name %}
+  {% endif %}
+{% endfor %}
+<div class="md-header__option">
+  <div class="md-select md-select--language">
+    <button class="md-header__button md-header__button--flag" aria-label="{{ lang.t('select.language') }}">
+      {% if _.flag %}
+        <img src="{{ _.flag | url }}" alt="{{ _.name }}" class="md-select__flag md-select__flag--current">
+      {% else %}
+        {% set icon = config.theme.icon.alternate or "material/translate" %}
+        {% include ".icons/" ~ icon ~ ".svg" %}
+      {% endif %}
+    </button>
+    <div class="md-select__inner">
+      <ul class="md-select__list">
+        {% for alt in config.extra.languages %}
+          {#- The same page in that language, and its home page for a page that
+              has no counterpart there. -#}
+          {% set target = alternates[alt.lang] | d("") %}
+          {% set href = target if target else alt.link %}
+          <li class="md-select__item">
+            {#- data-course-home is the fallback, written as course-site.yml holds
+                it so it stays right from any page. -#}
+            <a href="{{ href | url }}" hreflang="{{ alt.lang }}" data-course-home="{{ alt.link }}" class="md-select__link">
+              {% if alt.flag %}
+                <img src="{{ alt.flag | url }}" alt="" class="md-select__flag">
+              {% endif %}
+              {{ alt.name }}
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>

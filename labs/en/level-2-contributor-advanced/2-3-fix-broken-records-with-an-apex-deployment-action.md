@@ -66,7 +66,8 @@ panel. Name `US-024-crew-size-required`, org `helios-dev`.
 In `helios-dev`: **Setup > Object Manager > Installation > Fields & Relationships > Crew Size >
 Edit**, tick **Required**, **Save**.
 
-Salesforce accepts it without a word, although most installations in your org have no crew size.
+Salesforce warns you about API and Apex callers, asks you to **Confirm**, and saves it. Not a word
+about your data, although most installations in your org have no crew size.
 Remember that: it is the whole of this lab.
 
 Bring the field down with **Commit changes** (the field, nothing else), commit it, **Save /
@@ -280,6 +281,10 @@ Because the actions live in the repository and travel with the Pull Request, the
 replays in UAT and in production months later, without anybody remembering it existed. That is the
 whole value: **the knowledge is in the repository, not in someone's head.**
 
+<!-- command-links:start -->
+Command documentation: [hardis:project:deploy:smart](https://sfdx-hardis.cloudity.com/hardis/project/deploy/smart/)
+<!-- command-links:end -->
+
 </details>
 
 ## What you should see
@@ -313,7 +318,7 @@ correct behaviour. Untick it temporarily if you need to re-run while experimenti
 
 ## Check your work
 
-Welcome page > **Training: Level 2** > **Check my work**, then pick Lab 2.3.
+Welcome page > **Training: Level 2** > **Check my work**, then pick **Lab 2.3**.
 
 ## Go deeper
 

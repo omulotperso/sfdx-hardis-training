@@ -1,0 +1,70 @@
+---
+# What the translations need checking for, on the Pull Request that changes them.
+#
+# Three different things, and two of them are failures:
+#
+#   - a translation whose English source has moved is **reported**, never fatal.
+#     English is the reference and a translation is allowed to lag: what the job
+#     prints is the list of pages to re-read, not a reason to block a merge
+#   - a key of i18n/en.json that a locale does not answer **fails**. It is not a
+#     broken page, which is why it needs a check: the site falls back to English
+#     key by key, so the hole reads as an English sentence inside a French one
+#   - a table whose pipes no longer line up **fails**, because it is mechanical,
+#     one command fixes it, and MegaLinter would fail on it anyway, later and
+#     less clearly
+name: Check the translations
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "labs/**"
+      - ".github/workflows/translations.yml"
+  pull_request:
+    paths:
+      - "labs/**"
+  workflow_dispatch:
+
+permissions: read-all
+
+jobs:
+  translations:
+    name: Staleness, alignment and shape
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+          # source_rev names a commit, and comparing it with the history of the
+          # English file needs that history
+          fetch-depth: 0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+
+      - name: Translations behind their English source
+        run: node scripts/i18n/check-translations.mjs
+
+      # The generated pages, whose words are in i18n/<locale>.json rather than in
+      # markdown. A key a locale does not answer is not a broken page: strings()
+      # falls back to English, and the hole only shows as an English sentence in
+      # the middle of a French paragraph. So this one fails.
+      - name: Every locale answers every key of the generated pages
+        run: node scripts/i18n/check-i18n.mjs
+
+      - name: Every table's pipes line up
+        run: node scripts/i18n/align-tables.mjs --check
+
+      # A command named in an Under the hood block without a link to its page is
+      # a dead end for the one reader who wanted the flags. Caught here rather
+      # than on main, because the publish is too late to notice it.
+      - name: Every Under the hood block links the commands it names
+        run: node scripts/build/lab-command-links.mjs --check
+
+      # Reports, never fails: a deliberate difference is allowed, and the French
+      # home page has one. It is here to be read on the Pull Request, because a
+      # translation that lost an image or an "Under the hood" block shows up
+      # nowhere else.
+      - name: Translations keep the shape of their source
+        run: node scripts/i18n/check-structure.mjs

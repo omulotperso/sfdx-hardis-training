@@ -17,6 +17,9 @@
  *
  * It also fails on a lab that points at a raw screenshot rather than the
  * annotated copy, and on an annotated file nothing references.
+ *
+ * labs/_assets/badges/ is out of scope: it holds illustrations drawn by hand,
+ * not captures of a step, so there is nothing to pill and nothing to drift.
  */
 import fs from "fs";
 import path from "path";
@@ -26,6 +29,9 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "..", "..");
 const LABS = path.join(ROOT, "labs");
 const SPEC = path.join(LABS, "_assets", "annotations.json");
+
+// Illustrations, not screenshots of a step. See the header.
+const NOT_A_SCREENSHOT = /_assets\/badges\//;
 
 function walk(dir, out = []) {
   if (!fs.existsSync(dir)) {
@@ -67,7 +73,15 @@ const problems = [];
 const referenced = new Set();
 let checked = 0;
 
-for (const file of walk(path.join(LABS, "en"))) {
+// Every locale, not only English: the pill numbers are the one part of a lab a
+// translation must carry over untouched, and a translator dropping a **(3)** is
+// exactly the kind of mistake nothing else catches.
+const localeDirs = fs
+  .readdirSync(LABS, { withFileTypes: true })
+  .filter((entry) => entry.isDirectory() && /^[a-z]{2}(-[A-Z]{2})?$/.test(entry.name))
+  .map((entry) => path.join(LABS, entry.name));
+
+for (const file of localeDirs.flatMap((dir) => walk(dir))) {
   const rel = path.relative(ROOT, file).replace(/\\/g, "/");
   const lines = fs.readFileSync(file, "utf8").split("\n");
 
@@ -101,8 +115,12 @@ for (const file of walk(path.join(LABS, "en"))) {
       continue;
     }
 
+    const before = problems.length;
     const declared = new Set();
     for (const image of images) {
+      if (NOT_A_SCREENSHOT.test(image.target)) {
+        continue;
+      }
       if (!/_assets\/annotated\//.test(image.target)) {
         problems.push(`${rel}:${image.line} points at a raw screenshot, not the annotated copy: ${image.target}`);
         continue;
@@ -117,13 +135,24 @@ for (const file of walk(path.join(LABS, "en"))) {
       }
       pills.forEach((n) => declared.add(n));
     }
-    if (declared.size === 0) {
-      continue;
-    }
-
     const cited = new Set(
       [...block.join("\n").matchAll(/\*\*\((\d+)\)\*\*/g)].map((m) => Number(m[1]))
     );
+    // A step whose images carry no pills at all is fine, and several do: the
+    // level menus are shown plain. What is not fine is such a step still
+    // pointing at a number, which sends a reader hunting for a marker that was
+    // never drawn. Skipping the step outright used to hide exactly that.
+    if (declared.size === 0) {
+      // Only when every image of the step was found and annotated. Otherwise the
+      // real cause was already reported just above, and adding "no image carries
+      // a pill" on top of it reads as a second, contradictory diagnosis.
+      if (cited.size > 0 && problems.length === before) {
+        problems.push(
+          `${rel}:${images[0].line} "${heading}" cites (${[...cited].sort((a, b) => a - b).join("), (")}) but no image of this step carries a pill`
+        );
+      }
+      continue;
+    }
     const invented = [...cited].filter((n) => !declared.has(n)).sort((a, b) => a - b);
     const uncited = [...declared].filter((n) => !cited.has(n)).sort((a, b) => a - b);
     const shown = images.map((i) => i.target.split("/").pop()).join(", ");
