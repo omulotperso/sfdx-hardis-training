@@ -37,6 +37,26 @@ export function isActive() {
  * the acknowledgement does not arrive: in every one of those the caller keeps
  * its console output and its terminal questions.
  */
+/**
+ * What the panel calls each command, so a learner reads the thing they clicked
+ * rather than `training.mjs init`. The command line stays one hover away.
+ *
+ * Same wording as the Training menu entries in config/.sfdx-hardis.yml: the
+ * menu and the running command have to agree, or clicking one and reading the
+ * other is a puzzle.
+ */
+const LABELS = {
+  init: "Set up my training environment",
+  status: "Where am I?",
+  seed: "Set up one of my training orgs",
+  check: "Check my work",
+  claim: "Claim my badge",
+  simulate: "Simulate my teammates",
+  publish: "Publish my pipeline configuration",
+  reset: "Reset this level",
+  teardown: "Clean up a training org"
+};
+
 export async function connect(command) {
   if (!ADDRESS || typeof WebSocket === "undefined") {
     return false;
@@ -120,6 +140,11 @@ export async function connect(command) {
     close("skipped");
     return false;
   }
+  // Optional, and only understood by a recent extension: an older one ignores
+  // the event and keeps showing the command line, which is what it did before.
+  if (LABELS[command]) {
+    send({ event: "commandLabel", label: LABELS[command] });
+  }
   return true;
 }
 
@@ -143,6 +168,29 @@ export function log(message, type = "log") {
 }
 
 /**
+ * The panel draws text, number, select and multiselect questions, and nothing
+ * else. A confirm sent as one arrives with no Yes and no No: the learner gets a
+ * sentence, a Cancel and a Validate, and Validate answers an empty object, which
+ * every caller reads as "no". So a confirm becomes the two-choice select it
+ * already is, which is exactly what the CLI sends (reformatQuestions, in
+ * sfdx-hardis src/common/utils/prompts.ts).
+ */
+function forPanel(prompt) {
+  if (prompt.type !== "confirm") {
+    return prompt;
+  }
+  const yes = prompt.initial !== false;
+  return {
+    ...prompt,
+    type: "select",
+    choices: [
+      { title: "Yes", value: true, selected: yes },
+      { title: "No", value: false, selected: !yes }
+    ]
+  };
+}
+
+/**
  * Asks the question in the panel and waits for the answer. `prompt` is a
  * prompts-style definition: { type, name, message, choices, initial }.
  * Resolves to undefined when the panel is gone, so the caller can fall back.
@@ -151,6 +199,7 @@ export async function ask(prompt) {
   if (!isActive()) {
     return undefined;
   }
+  const question = forPanel(prompt);
   const answer = await new Promise((resolve) => {
     const timer = setTimeout(() => resolve(undefined), ANSWER_TIMEOUT_MS);
     pendingAnswer = (value) => {
@@ -158,10 +207,10 @@ export async function ask(prompt) {
       pendingAnswer = null;
       resolve(value);
     };
-    send({ event: "prompts", prompts: [prompt] });
+    send({ event: "prompts", prompts: [question] });
   });
   const value =
-    answer && typeof answer === "object" && prompt.name in answer ? answer[prompt.name] : answer;
+    answer && typeof answer === "object" && question.name in answer ? answer[question.name] : answer;
   // What the panel sends when the learner dismisses the question. Every caller
   // treats it the way the CLI does: the command stops there.
   if (value === CANCELLED || (Array.isArray(value) && value[0] === CANCELLED)) {

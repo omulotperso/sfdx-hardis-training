@@ -8,7 +8,7 @@ lang: en
 
 # Level 3 - Salesforce DevOps release manager
 
-**Time**: about 6 h.
+**Time**: about 7 h.
 
 **Before you start**: [Level 1](../level-1-contributor-basics/index.md) **and** [Level 2](../level-2-contributor-advanced/index.md). Both
 are required, and the badge audit checks both before it looks at anything here.
@@ -47,19 +47,20 @@ over the page:
 
 ![The Level 3 training menu, opened on the Welcome page](../../_assets/annotated/vscode/welcome-custom-menu-3.png)
 
-Nine of them, and the labs call them by these names:
+Ten of them, and the labs call them by these names:
 
-| Command                               | What it does                                                               |
-|---------------------------------------|----------------------------------------------------------------------------|
-| **Set up my training environment**    | Rebuilds a scratch org that expired, and points the pipeline at it         |
-| **Where am I?**                       | Says which level and lab you reached, and what to do next                  |
-| **Set up one of my training orgs**    | Deploys the Helios app and its data into an org you choose                 |
-| **Simulate my teammates**             | Creates the teammate branches and Pull Requests a lab needs                |
-| **Publish my pipeline configuration** | Opens a Pull Request into `integration` with the configuration you changed |
-| **Check my work**                     | Verifies the lab you just finished and prints your receipt                 |
-| **Claim my badge**                    | Checks the whole level, then opens your badge claim filled in              |
-| **Reset this level**                  | Puts your repository back to the start of Level 3                          |
-| **Clean up a training org**           | Removes the Helios app and its data from an org                            |
+| Command                               | What it does                                                                                          |
+|---------------------------------------|-------------------------------------------------------------------------------------------------------|
+| **Set up my training environment**    | Rebuilds a scratch org that expired, and points the pipeline at it                                    |
+| **Where am I?**                       | Says which level and lab you reached, and what to do next                                             |
+| **Set up one of my training orgs**    | Deploys the Helios app and its data into an org you choose                                            |
+| **Simulate my teammates**             | Creates the teammate branches and Pull Requests a lab needs                                           |
+| **Publish my pipeline configuration** | Opens a Pull Request into `integration` with the configuration you changed                            |
+| **Check my work**                     | Verifies the lab you just finished and prints your receipt                                            |
+| **Claim my badge**                    | Checks the whole level, then opens your badge claim filled in                                         |
+| **Update my course**                  | Brings the changes the course received since you forked it, through a Pull Request into `integration` |
+| **Reset this level**                  | Puts your repository back to the start of Level 3                                                     |
+| **Clean up a training org**           | Removes the Helios app and its data from an org                                                       |
 
 There is one menu per level, and each holds only what that level needs, so nothing in front of you is
 for a lab you have not reached.
@@ -80,7 +81,8 @@ Either route runs the same thing.
 | [3.7](3-7-hotfix-and-retrofit.md)                         | Production is broken: hotfix and retrofit                    | 35 min |
 | [3.8](3-8-monitor-your-production-org.md)                 | Monitor your production org                                  | 35 min |
 | [3.9](3-9-generate-the-project-documentation.md)          | Generate the Salesforce project documentation                | 20 min |
-| [3.10](3-10-capstone-run-a-weekly-release-cycle.md)       | Capstone: run a weekly release cycle                         | 45 min |
+| [3.10](3-10-promote-a-subset-with-promotion-branches.md)  | Promote a subset with promotion branches (Beta)              | 55 min |
+| [3.11](3-11-capstone-run-a-weekly-release-cycle.md)       | Capstone: run a weekly release cycle                         | 45 min |
 
 ## One more org
 

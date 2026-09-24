@@ -1,17 +1,41 @@
 #!/usr/bin/env node
 /**
- * Writes a learner's badge: the SVG, the machine readable record and the page.
+ * Writes a learner's badge: the SVG and the machine readable record.
  *
- *   node scripts/badges/render.mjs --audit /tmp/audit.json --issue 42 --trailblazer nvuillamy
+ * The page a learner shares is built from that record by scripts/build/site.mjs,
+ * in every language of the course.
  *
- * A badge exists the moment these three files are committed. The site only
+ *   node scripts/badges/render.mjs --audit /tmp/audit.json --issue 42 \
+ *     --trailblazer nvuillamy --trailblazer-name "Nicolas Vuillamy" --name "Nicolas Vuillamy"
+ *
+ * `--trailblazer-name` is the name on the Trailblazer profile and `--name` the
+ * GitHub display name. The badge prefers the first and falls back to the second,
+ * then to the handle.
+ *
+ * A badge exists the moment these two files are committed. The site only
  * renders them, so a broken Pages build never blocks an award.
+ *
+ * ## Everything is keyed by the Trailblazer username
+ *
+ * `badges/<trailblazer>.json` and
+ * `badges/img/<trailblazer>-level-N.svg`, so that anything holding a Trailblazer
+ * username can ask the site what that person earned, with one GET and no index
+ * to walk:
+ *
+ *     https://hardisgroupcom.github.io/sfdx-hardis-training/badges/nvuillamy.json
+ *
+ * The Trailhead Banner project works from a Trailblazer username, and a badge
+ * filed under a GitHub login would be invisible to it. The GitHub handle stays
+ * inside the record as `recipient`, because that is the thing the audit actually
+ * proved.
  */
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { parseArgs } from "../lib/util.mjs";
 import { LEVELS, renderSvg } from "./badge-svg.mjs";
+import { writeCardFor } from "./social.mjs";
+import { bannerUrl, writeBanners } from "./banners.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "..", "..");
@@ -38,25 +62,103 @@ const handle = audit.handle;
 const level = audit.level;
 const today = new Date().toISOString().slice(0, 10);
 const definition = LEVELS[level];
+const text = (value) => (typeof value === "string" && value.trim() ? value.trim() : null);
+
+// The Trailblazer username is the key of everything this writes, so it is
+// required, and it is checked again here rather than trusted. parse-claim.mjs
+// already accepts only this shape, but this value becomes a file path: "." or
+// ".." or a separator slipping through would write outside badges/.
+const key = text(args.trailblazer);
+if (!key || !/^[A-Za-z0-9._-]{1,60}$/.test(key) || key === "." || key === "..") {
+  console.error(
+    `--trailblazer is required and must be a plain Trailblazer username, got ${JSON.stringify(args.trailblazer)}`
+  );
+  process.exit(2);
+}
 
 // ------------------------------------------------------------------- SVG
-// The GitHub display name, set by the claim workflow from the GitHub API. A
-// handle without a display name shows the handle twice, which is fine.
-const fullName = (typeof args.name === "string" && args.name.trim()) || handle;
+// Whose name this is, in the order of who is most likely to have spelled it the
+// way the person wants it read: their Trailblazer profile first, since this is a
+// Salesforce badge and that profile is the one it links to; then their GitHub
+// display name; then their handle, for somebody who set neither.
+const trailblazerName = text(args["trailblazer-name"]);
+const githubName = text(args.name);
+const fullName = trailblazerName || githubName || handle;
 
 function svg() {
-  return renderSvg({ level, handle, fullName, trailblazer: args.trailblazer || null, date: today });
+  return renderSvg({ level, handle, fullName, trailblazer: key, date: today });
+}
+
+// ------------------------------------------------------------- the old key
+/**
+ * The same person's badge filed under another name, which has to move here.
+ *
+ * Two ways it happens: a badge awarded before badges were keyed by Trailblazer
+ * username, and somebody claiming a second level after changing that username.
+ * Both are the same situation, one record under the wrong name, and leaving it
+ * behind would publish two pages for one person and let the older one rot.
+ */
+function findRecordUnderAnotherKey() {
+  if (!fs.existsSync(BADGES)) {
+    return null;
+  }
+  for (const file of fs.readdirSync(BADGES)) {
+    if (!file.endsWith(".json") || file.startsWith("_") || file === `${key}.json`) {
+      continue;
+    }
+    try {
+      const candidate = JSON.parse(fs.readFileSync(path.join(BADGES, file), "utf8"));
+      if (candidate && candidate.recipient === handle) {
+        return { oldKey: file.replace(/\.json$/, ""), record: candidate };
+      }
+    } catch {
+      // A record that cannot be read is not this person's problem
+    }
+  }
+  return null;
 }
 
 fs.mkdirSync(path.join(BADGES, "img"), { recursive: true });
-fs.writeFileSync(path.join(BADGES, "img", `${handle}-level-${level}.svg`), svg(), "utf8");
 
 // ------------------------------------------------------- machine readable
-const recordPath = path.join(BADGES, `${handle}.json`);
-const record = fs.existsSync(recordPath) ? JSON.parse(fs.readFileSync(recordPath, "utf8")) : { recipient: handle, badges: [] };
+const recordPath = path.join(BADGES, `${key}.json`);
+let record = { recipient: handle, badges: [] };
+let movedFrom = null;
+if (fs.existsSync(recordPath)) {
+  record = JSON.parse(fs.readFileSync(recordPath, "utf8"));
+} else {
+  const previous = findRecordUnderAnotherKey();
+  if (previous) {
+    record = previous.record;
+    movedFrom = previous.oldKey;
+    // The badges of the levels this run is not re-rendering keep their images,
+    // so those files move too and their URLs move with them
+    for (const badge of record.badges || []) {
+      const from = path.join(BADGES, "img", `${movedFrom}-level-${badge.level}.svg`);
+      const to = path.join(BADGES, "img", `${key}-level-${badge.level}.svg`);
+      if (fs.existsSync(from)) {
+        fs.renameSync(from, to);
+      }
+      badge.image = `${SITE}/badges/img/${key}-level-${badge.level}.svg`;
+    }
+    for (const stale of [`${movedFrom}.json`, `${movedFrom}.md`]) {
+      const file = path.join(BADGES, stale);
+      if (fs.existsSync(file)) {
+        fs.rmSync(file);
+      }
+    }
+  }
+}
+
+fs.writeFileSync(path.join(BADGES, "img", `${key}-level-${level}.svg`), svg(), "utf8");
 
 record.recipient = handle;
-record.trailblazer = args.trailblazer || record.trailblazer || null;
+record.trailblazer = key;
+// Kept in the record so the index can list people by name without asking the
+// Trailblazer API again on every site build, and so a badge still reads right
+// when that API is unreachable or the profile later goes private.
+record.name = fullName;
+record.trailblazerName = trailblazerName || record.trailblazerName || null;
 record.badges = (record.badges || []).filter((badge) => badge.level !== level);
 record.badges.push({
   // An Open Badges shaped structure, unsigned in v1. Real certifications, if
@@ -76,50 +178,45 @@ record.badges.push({
     { type: "Repository", url: audit.repo || null },
     { type: "ClaimIssue", url: args.issue ? `https://github.com/${UPSTREAM}/issues/${args.issue}` : null }
   ].filter((item) => item.url),
-  image: `${SITE}/badges/img/${handle}-level-${level}.svg`,
+  image: `${SITE}/badges/img/${key}-level-${level}.svg`,
+  // The same award drawn for a Trailhead banner: one file per level, shared by
+  // every holder, because nothing in it is personal. See banners.mjs.
+  bannerImage: bannerUrl(level),
+  // Release Manager sits on top of the other two, which is what a superbadge is
+  superbadge: definition.superbadge === true,
   checksPassed: audit.passed,
   checksTotal: audit.total
 });
 record.badges.sort((a, b) => a.level - b.level);
 fs.writeFileSync(recordPath, JSON.stringify(record, null, 2) + "\n", "utf8");
 
-// ------------------------------------------------------------- badge page
-const rows = record.badges
-  .map((badge) => `| ![${badge.name}](img/${handle}-level-${badge.level}.svg) | **${badge.name}** | ${badge.issuedOn} | ${badge.checksPassed}/${badge.checksTotal} checks |`)
-  .join("\n");
+// The page is not written here. scripts/build/site.mjs builds it from this
+// record on every site build, once per language, so a badge claimed before a
+// language existed gains its page in it without anybody touching the claim, and
+// the words of that page live with the other translations, in i18n/<locale>.json.
 
-const page = `---
-title: ${handle}
----
+// The three banner badges, in case a level was added or the template changed
+// since the last claim. No browser needed: they are SVG like the badge itself.
+writeBanners();
 
-# Badges earned by ${handle}
+// The card a share of the badge page shows, and the square picture the page
+// offers to attach to a post. Best effort on purpose: they need a browser, and a
+// claim must not fail because one could not be installed. When it does not
+// happen here, the page falls back to the card of the course and leaves the
+// picture out until somebody runs scripts/badges/rerender.mjs.
+let cards = [];
+try {
+  cards = await writeCardFor(key);
+} catch (error) {
+  console.warn(`  (no social card: ${error.message.split("\n")[0]})`);
+}
 
-${record.trailblazer ? `Trailblazer profile: [${record.trailblazer}](https://www.salesforce.com/trailblazer/${record.trailblazer})\n` : ""}
-| | Badge | Awarded | Verified |
-|---|---|---|---|
-${rows}
-
-## What these mean
-
-Each badge was awarded by a job that cloned ${record.badges[0] && record.badges[0].evidence[0] ? `[the repository](${record.badges[0].evidence[0].url})` : "the learner's public repository"}
-and re-ran every check of the level against its actual content and history. A level 2 badge also
-re-ran the level 1 checks, and a level 3 badge re-ran all three.
-
-What is verified is the work in the repository: the fields, the deployment actions, the resolved
-conflicts, the pipeline configuration. What is **not** verified is the state of anybody's Salesforce
-orgs. Nobody is asked for org credentials, and this is not an exam.
-
-## It is a badge, not a certification
-
-There is no exam and no accreditation here. Share this page under *Featured* on LinkedIn, or as a
-course. Not under *Licenses & certifications*.
-
-[Take the course](${SITE}/){ .md-button }
-`;
-
-fs.writeFileSync(path.join(BADGES, `${handle}.md`), page, "utf8");
-
-console.log(`Badge written for ${handle}, level ${level}:`);
-console.log(`  badges/${handle}.md`);
-console.log(`  badges/${handle}.json`);
-console.log(`  badges/img/${handle}-level-${level}.svg`);
+console.log(`Badge written for ${handle} as ${key}, level ${level}:`);
+console.log(`  badges/${key}.json`);
+console.log(`  badges/img/${key}-level-${level}.svg`);
+for (const card of cards) {
+  console.log(`  ${path.relative(ROOT, card).split(path.sep).join("/")}`);
+}
+if (movedFrom) {
+  console.log(`  (moved from ${movedFrom}, which was removed)`);
+}

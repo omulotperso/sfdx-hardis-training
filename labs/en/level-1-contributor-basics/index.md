@@ -60,15 +60,17 @@ over the page:
 
 ![The Level 1 training menu, opened on the Welcome page](../../_assets/annotated/vscode/welcome-custom-menu.png)
 
-Five of them, and the labs call them by these names:
+Seven of them, and the labs call them by these names:
 
-| Command                            | What it does                                                                     |
-|------------------------------------|----------------------------------------------------------------------------------|
-| **Set up my training environment** | Forks the repository, creates your scratch orgs with the app, wires the pipeline |
-| **Where am I?**                    | Says which level and lab you reached, and what to do next                        |
-| **Check my work**                  | Verifies the lab you just finished and prints your receipt                       |
-| **Claim my badge**                 | Checks the whole level, then opens your badge claim filled in                    |
-| **Reset this level**               | Puts your repository back to the start of Level 1                                |
+| Command                            | What it does                                                                                          |
+|------------------------------------|-------------------------------------------------------------------------------------------------------|
+| **Set up my training environment** | Forks the repository, creates your scratch orgs with the app, wires the pipeline                      |
+| **Where am I?**                    | Says which level and lab you reached, and what to do next                                             |
+| **Check my work**                  | Verifies the lab you just finished and prints your receipt                                            |
+| **Trigger my workflows**           | Starts the checks of your Pull Request when your fork had Actions switched off                        |
+| **Claim my badge**                 | Checks the whole level, then opens your badge claim filled in                                         |
+| **Update my course**               | Brings the changes the course received since you forked it, through a Pull Request into `integration` |
+| **Reset this level**               | Puts your repository back to the start of Level 1                                                     |
 
 There is one menu per level, and each holds only what that level needs, so nothing in front of you is
 for a lab you have not reached.
@@ -85,7 +87,7 @@ because a card is easier to point at than a row.
 you and nobody else. Your changes, your mistakes, your fixes, and nothing you do reaches anybody
 else's work. Lab 1.2 sets that copy up for you in one click, and explains why it has to be that way.
 
-**You click, you do not type.** Every action in these labs is a button in the VS Code extension.
+**You click, you do not type command lines.** Every action in these labs is a button in the VS Code extension.
 Where a command appears, it is in an **Under the hood** block, which explains what the button did.
 You never have to retype it.
 

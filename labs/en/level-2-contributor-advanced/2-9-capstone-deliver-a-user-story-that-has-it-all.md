@@ -128,7 +128,7 @@ Level 2, which means redoing the capstone, not the whole level.
 
 ## Check your work
 
-Welcome page > **Training: Level 2** > **Check my work**, then pick **Everything in level 2**.
+Welcome page > **Training: Level 2** > **Check my work**, then pick **Everything in level 2, capstone included**.
 
 Nine checks.
 
@@ -136,8 +136,8 @@ Nine checks.
 
 Welcome page > **Training: Level 2** > **Claim my badge**.
 
-Same as Level 1: it re-checks everything here, opens the claim form filled in, and you tick the
-three boxes and submit.
+Same as Level 1: it re-checks everything here and opens the claim form filled in. Pick your level
+in the **Level** dropdown, which a link cannot prefill, then tick the three boxes and submit.
 
 A Level 2 claim re-runs the **Level 1 audit as well**, because the badge says you can do both. If
 you skipped Level 1, that is where it will say so, and the command says it before the form opens.
@@ -149,6 +149,11 @@ you skipped Level 1, that is where it will say so, and the command says it befor
 
 The badge for this level is called **sfdx-hardis Contributor Advanced**. Level 1 makes you able to
 deliver a User Story; Level 2 makes you able to deal with everything that goes wrong on the way.
+
+!!! tip "Put it on your LinkedIn banner"
+    [Trailhead Banner](https://thb.nabondance.me/) draws a LinkedIn cover image from a Trailblazer
+    username, and it shows the highest sfdx-hardis training badge you claimed here. Type your
+    username, generate the picture, and set it as your LinkedIn cover.
 
 ## What comes next
 

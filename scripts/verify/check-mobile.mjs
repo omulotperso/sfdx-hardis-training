@@ -31,7 +31,18 @@ const PAGES = [
   "en/level-1-contributor-basics/index.html",
   "en/level-2-contributor-advanced/index.html",
   "en/level-3-release-manager/index.html",
+  "en/help/index.html",
   "BACKLOG/index.html",
+  // The same pages in French: a translated table has longer words in the same
+  // columns, which is how a five-column table starts overflowing
+  "fr/index.html",
+  "fr/level-1-contributor-basics/index.html",
+  "fr/level-2-contributor-advanced/index.html",
+  "fr/level-3-release-manager/index.html",
+  "fr/help/index.html",
+  // The French backlog: the same five columns as the English one, with longer
+  // words in them, which is how a table starts overflowing
+  "fr/BACKLOG/index.html",
 ];
 
 const PHONE = { width: 412, height: 915 };
@@ -98,7 +109,9 @@ for (const rel of PAGES) {
     problems.push(`${rel}: ${notes.join("; ")}`);
     console.log(`FAIL ${rel}  ${notes.join("; ")}`);
   } else {
-    console.log(`OK   ${rel}  narrowest column ${report.narrowest ?? "n/a"}px`);
+    // A page with no table, the help page for one, is here for the sideways scroll
+    const measured = report.narrowest === null ? "no table" : "narrowest column " + report.narrowest + "px";
+    console.log(`OK   ${rel}  ${measured}`);
   }
 
   if (SHOTS) {
