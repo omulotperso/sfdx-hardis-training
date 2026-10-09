@@ -10,7 +10,7 @@ screenshots:
   - annotated/web/github-pr-checks
   - annotated/web/github-pr-comment
   - annotated/web/github-pr-merge
-  - annotated/web/github-actions-deploy
+  - annotated/vscode/devops-pipeline--deployment-status
   - annotated/web/github-pr-deployed
   - annotated/vscode/work-save-completed
   - annotated/web/github-pr-merge-squash
@@ -69,9 +69,12 @@ Two other things in that bar are worth knowing now, because later labs use them.
 Actions of this Pull Request, which is what the whole of [Lab 2.3](../level-2-contributor-advanced/2-3-fix-broken-records-with-an-apex-deployment-action.md) is about.
 
 !!! note "If you closed that panel"
-    Nothing is lost. Open your fork (`github.com/my-username/sfdx-hardis-training`) on GitHub: it shows a banner offering to open a Pull Request
-    for the branch you just pushed. The **+ PR** pill you may have noticed in the DevOps Pipeline
-    diagram is for major branches, not for your feature branch.
+    Nothing is lost, and there are two ways back. Run **Save / Publish my User Story** again: every
+    step checks before it acts, there is nothing left to commit or push, and it finishes on the
+    same actions bar. Or open your fork (`github.com/my-username/sfdx-hardis-training`) on GitHub,
+    which shows a banner offering to open a Pull Request for the branch you just pushed. The
+    **+ PR** pill you may have noticed in the DevOps Pipeline diagram is for major branches, not
+    for your feature branch.
 
 Check two things before clicking, every single time:
 
@@ -86,9 +89,17 @@ Check two things before clicking, every single time:
 
 The title reads **Features/us 014 panels required**: GitHub makes it up from the branch name
 whenever a branch carries more than one commit, and yours carries two, the one you wrote and the
-one Save / Publish added. Replace it with the first line of your commit message,
-`US-014 Panels Required on Installation`, and paste the rest of that message into the
-description. It is what the reviewer reads first. Click **Create pull request**.
+one Save / Publish added. Replace it with the first line of the commit message you wrote in
+[Lab 1.5 step 4](1-5-retrieve-commit-and-publish-your-changes.md), `US-014 Panels Required on
+Installation`.
+
+The description box is not empty: this repository ships a Pull Request template, and GitHub puts it
+there for you. **Replace the whole of it.** Under **What this changes**, paste the rest of that
+same commit message, the paragraph explaining why; fill in the story id; and say where a reviewer
+should look. Delete the comment lines and any heading you have nothing to put under. A template is
+a reminder of what to write, not something to hand in as it came.
+
+It is what the reviewer reads first. Click **Create pull request**.
 
 ### 2. Watch the checks run
 
@@ -96,13 +107,28 @@ Open the **Checks** tab **(1)**. Two of them matter here, and both start on thei
 
 | Check                                         | What it does                                                                                |
 |-----------------------------------------------|---------------------------------------------------------------------------------------------|
-| **Simulate Deployment (sfdx-hardis)** **(3)** | Deploys your metadata into `helios-integration` in validation mode, and runs the Apex tests |
-| **Mega-Linter** **(2)**                       | Runs the code quality linters over the repository                                           |
+| **Simulate Deployment (sfdx-hardis)** **(2)** | Deploys your metadata into `helios-integration` in validation mode, and runs the Apex tests |
+| **Mega-Linter** **(3)**                       | Runs the code quality linters over the repository                                           |
 
 ![The Checks tab of a Pull Request, listing the jobs that ran](../../_assets/annotated/web/github-pr-checks.png)
 
 Click either one to read its log while it runs. The deployment check takes about two minutes, and
 you can watch it authenticate with your secret, work out what changed, and start the deployment.
+
+!!! warning "No checks at all? Actions are off on your fork"
+    If the Checks tab is empty and nothing ever starts, GitHub has not enabled Actions on your
+    copy of the repository. It does that to every new fork, on purpose: a fork could otherwise run
+    somebody else's workflows in your account the moment you made it. **Set up my training
+    environment** turns them on when it can, and says so when it cannot.
+
+    Open the **Actions** tab of your fork (`github.com/my-username/sfdx-hardis-training`) and click
+    **I understand my workflows, go ahead and enable them**. One click. Then come back here and
+    run **Training: Level 1 > Trigger my workflows**: it pushes a one-line change to your branch,
+    which is what makes GitHub start the checks on a Pull Request that opened while Actions were
+    off.
+
+    This is a fork thing, and only a fork thing. On a real project you join a repository whose
+    automation is already running, and there is nothing to enable.
 
 ### 3. Read the sfdx-hardis comment
 
@@ -112,11 +138,13 @@ the most useful thing on the page.
 ![The sfdx-hardis comment on a Pull Request](../../_assets/annotated/web/github-pr-comment.png)
 
 1. **The banner** **(1)** says whether the simulated deployment succeeded
-2. **What would change** **(2)**. Not a list of your files: sfdx-hardis sends the whole package,
-   `manifest/package.xml`, and Salesforce answers how much of it differs: `34 sent to the org, 5
-   would change (1 created, 4 updated, 0 deleted, 29 unchanged)`. The one created is your field, and the
-   updated ones include the layout and the two permission sets you changed
-3. **Apex coverage** **(3)**, against the target this project sets
+2. **Apex coverage** **(2)**, right under it, against the target this project sets
+3. **What would change** **(3)**. Not a list of your files: sfdx-hardis sends the whole package,
+   `manifest/package.xml`, and Salesforce answers how much of it differs: `Simulated deployment: 36
+   components validated against the org, 7 would change (1 created, 6 updated, 0 deleted, 29
+   unchanged)`. The one created is your field, and the updated ones include the layout and the two
+   permission sets you changed. Click the line under it to open a table of those changes, per type
+   of component: the field is the **CustomField** row
 4. **Tickets** **(4)**, the stories it recognised in your branch name and commit messages, each
    with its title and a link to its page in the backlog
 
@@ -179,31 +207,42 @@ GitHub remembers the method you picked last, so check the button label before ev
 Then delete the branch. GitHub offers a button for it. A merged branch that stays around is one
 more thing in everyone's list for no benefit.
 
-!!! note "What the linter is for, since it had nothing to say"
+!!! note "What the linter is for, and why its comment can show a warning"
     MegaLinter reads the whole repository, not only your change, and reports anything that breaks
-    the project's quality rules. It found nothing here because this repository is clean. When it
-    does find something, it writes it on the Pull Request the same way the deployment check does,
-    and whether a finding fails the job is a choice the project makes in `.mega-linter.yml`. A job that
-    fails blocks the merge, like the deployment check.
-    Level 2 has a lab where one blocks you, on purpose.
+    the project's quality rules. It writes its verdict on the Pull Request the same way the
+    deployment check does. Your change broke none of them, so the check is green, and the comment
+    may still read **Success with warnings**, with a ⚠️ line for a linter the project keeps
+    non-blocking, such as the auditor of the GitHub Actions workflow files. Whether a finding fails
+    the job is a choice the project makes in `.mega-linter.yml`, and a job that fails blocks the
+    merge, like the deployment check. [Lab 2.5](../level-2-contributor-advanced/2-5-pass-code-quality-and-apex-test-coverage.md) has you meet one finding that only warns, and
+    one check that blocks.
 
 ### 5. Watch the real deployment
 
 Merging into `integration` starts a second job, and this one is not a check: it deploys for real.
 
-Go to the **Actions** tab **(1)** of your fork (`github.com/my-username/sfdx-hardis-training`). The merge started two runs on `integration`: the
-one to watch is **Process Deployment (sfdx-hardis)** **(2)**, and it takes about three minutes.
-The other, **Mega-Linter**, checks the code again after the merge.
+Go back to VS Code and open the **DevOps Pipeline** panel. The arrow from the `integration` branch
+to its org carries a pill, and while the deployment runs that pill says so and pulses. This is the
+screen to watch, and the one you will keep open on a real project: it answers "is my work in the
+org yet" without leaving the editor.
 
-![The Actions tab of a fork, with the deployment run at the top](../../_assets/annotated/web/github-actions-deploy.png)
+![The DevOps Pipeline panel, with the deployment status on the arrow to the org](../../_assets/annotated/vscode/devops-pipeline--deployment-status.png)
 
-When it finishes, it writes a second comment on the Pull Request you just merged:
+The picture was taken later in the course, with teammates' branches on the left of `integration`.
+Yours shows only `integration` and `uat`: the pill **(1)** on the arrow to the org is the part to look
+at.
+
+The pill is also a link: click it and GitHub opens on the log of that run, **Process Deployment
+(sfdx-hardis)**, which takes about three minutes. You do not need to read it today. It is there for
+the day something fails, and [Lab 3.3](../level-3-release-manager/3-3-deploy-to-integration-and-read-the-log.md) is the lab that reads one line by line.
+
+When the deployment finishes, it writes a second comment on the Pull Request you just merged:
 
 ![The comment sfdx-hardis writes after the merge deployment](../../_assets/annotated/web/github-pr-deployed.png)
 
 1. **Deployment successful** **(1)**, and this time the org really changed
-2. **What changed** **(2)**, in the same shape as the check said it would: `5 changed` where the
-   check said `5 would change`
+2. **What changed** **(2)**, in the same shape as the check said it would: `7 changed` where the
+   check said `7 would change`
 3. **Quick Deploy** **(3)**. The merge job did not start from nothing. It released the validation
    the Pull Request check had already done, which is why it did not run the Apex tests a second
    time and why it took two minutes rather than five
@@ -243,6 +282,10 @@ The test level comes from `config/.sfdx-hardis.yml`:
 `RunLocalTests` runs every test in the org except those from managed packages. 75% is the Salesforce
 minimum, and this project asks for 80, like most real ones.
 
+<!-- command-links:start -->
+Command documentation: [hardis:project:deploy:smart](https://sfdx-hardis.cloudity.com/hardis/project/deploy/smart/)
+<!-- command-links:end -->
+
 </details>
 
 ## What you should see
@@ -256,8 +299,15 @@ That is one full delivery loop. Every story for the rest of your life on this pr
 ## If it goes wrong
 
 **The checks never start.**
-Actions are still disabled on your fork (`github.com/my-username/sfdx-hardis-training`). Run **Training: Level 1 > Set up my training environment**
-again: it turns them on, and tells you what to click if GitHub will not let it.
+Actions are still disabled on your fork (`github.com/my-username/sfdx-hardis-training`). GitHub hides
+that switch behind a banner no command can reach: open the **Actions** tab of your fork and click
+**I understand my workflows, go ahead and enable them**. Re-running **Set up my training
+environment** will not do it for you, because there is no API behind that banner.
+
+Your branch was pushed while they were off, so nothing ran on it. **Push it again**, with one more
+commit on the branch, and both checks start. Reopening the Pull Request is not enough on its own:
+that re-runs the deployment check, while Mega-Linter runs on the push, and the merge stays blocked
+on the check that never came.
 
 **The check fails at authentication:** *No authentication found for org integration*.
 The secret is missing, misnamed, or truncated. It must be named exactly
@@ -271,20 +321,26 @@ without the field. Redo [Lab 1.5 step 3](1-5-retrieve-commit-and-publish-your-ch
 
 **The check is stuck as "Expected".**
 The workflow is waiting for a job that will never run, usually because the base of the Pull Request
-is the original repository and not your fork (`github.com/my-username/sfdx-hardis-training`). Close it and open it again with the right base.
+is the original repository and not your fork. Close it and open it again with the right base.
 
 **The merge box says Merging is blocked, and the button is grey.**
 A required check is still running, or it failed. Wait for it, or open it from the **Checks** tab,
 fix what it reports on your branch, and push again: the checks run again on their own. There is no
 way around it, and there is not meant to be.
 
+**A commit you did not make, `chore(megalinter): apply linters fixes`, is on your branch.**
+MegaLinter reformatted a file of your Pull Request and pushed the result. GitHub does not start the
+checks again for a commit its own robot pushed, so they are missing or red on it and the merge stays
+blocked. **Pull** in the **Source Control** panel to bring the robot's commit to your computer, then
+run **Training: Level 1 > Trigger my workflows**: a push of yours is what starts the checks again.
+
 **The deployment succeeds but the field is not in the org.**
-Look at the deployed components list in the comment. If the field is not there, it is not in
-`manifest/package.xml`, and [Lab 1.5 step 6](1-5-retrieve-commit-and-publish-your-changes.md#6-read-the-package-before-you-push) is where you read it.
+Open the table of changes in the comment, under the counts line. If it has no **CustomField** row,
+the field is not in `manifest/package.xml`, and [Lab 1.5 step 6](1-5-retrieve-commit-and-publish-your-changes.md#6-read-the-package-before-you-push) is where you read it.
 
 ## Check your work
 
-Welcome page > **Training: Level 1** > **Check my work**, then pick Lab 1.6.
+Welcome page > **Training: Level 1** > **Check my work**, then pick **Lab 1.6**.
 
 ## Go deeper
 

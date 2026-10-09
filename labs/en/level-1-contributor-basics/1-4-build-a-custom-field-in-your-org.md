@@ -75,16 +75,24 @@ to it.
 | Field Label    | `Panels Required`                                             |
 | Length         | 4                                                             |
 | Decimal Places | 0                                                             |
-| Field Name     | `Panels_Required__c` (Salesforce fills this from the label)   |
+| Field Name     | `Panels_Required` (Salesforce fills this from the label)      |
 | Description    | `How many panels the crew has to load for this installation.` |
 | Help Text      | `Ask the planner if this is empty.`                           |
 | Required       | **no**                                                        |
 
-On the field-level security screen, leave every profile unticked and click **Next**. You are going
-to grant this through a permission set, not a profile, and [Lab 2.6](../level-2-contributor-advanced/2-6-permission-sets-and-profiles.md) is about why that
+The **Field Name** box is what Salesforce calls the API name, and it fills it from the label as you
+type. It shows `Panels_Required`, without the `__c`: Salesforce adds that suffix to every custom
+field when it saves, and the rest of this course, the metadata files included, calls the field
+`Panels_Required__c`.
+
+The field-level security screen arrives with **Visible** already ticked for nearly every profile.
+Clear them: the checkbox in the **Visible** column header toggles the whole column, so click it once
+to tick everything and again to leave nothing ticked. Then click **Next**. You are going to grant
+this through a permission set, not a profile, and [Lab 2.6](../level-2-contributor-advanced/2-6-permission-sets-and-profiles.md) is about why that
 distinction matters more than it looks.
 
-On the page layout screen, tick **Installation Layout** so the field appears on the record.
+On the page layout screen, **Installation Layout** is already ticked, which is what puts the field on
+the record. Leave it.
 
 Click **Save**.
 
@@ -124,11 +132,12 @@ does not grant.
 ### 4. Put it where people will look
 
 The field is on the layout, which is what old-style Salesforce pages use. The Installation record
-page is a Lightning record page, and it shows the layout inside its **Details** tab, so you are
+page is a Lightning record page, and the column of fields on its left is that layout, so you are
 already done.
 
 Open any installation (**App Launcher > Helios Delivery > Installations**, pick `INST-00001`) and
-check the **Details** tab. `Panels Required` is there, empty.
+look at the bottom of that column. `Panels Required` is there, empty, with the small **i** of the
+help text you wrote next to its name.
 
 ### 5. Test it against real data
 
@@ -139,11 +148,12 @@ Empty fields prove nothing. Put a number in.
 The **Installations** tab **(1)** is how you get back to this list from anywhere in the app. On the
 right of the record sits the **Panel delivery timeline** **(2)**, which lists the pallets booked for
 this installation with their quantities. The picture was taken before this story existed, on an
-installation with no pallet booked, so there is no Panels Required in its Details either. Most
+installation with no pallet booked, so there is no Panels Required in its column either. Most
 installations have two or three pallets.
 
-1. On `INST-00001`, click **Edit**, set **Panels Required** to the number the timeline adds up to,
-   and **Save**
+1. On `INST-00001`, click the pencil at the right of **Panels Required**, type the number the
+   timeline adds up to, and click **Save** at the bottom of the page. This page has no **Edit**
+   button: every field is edited in place, with its own pencil
 2. Look at the two numbers side by side. On a real story you would ask the planner whether this
    field should be typed in or worked out from the pallets. Here, typed in is the story, and that
    question is exactly the one a good contributor asks before building anything
@@ -152,7 +162,8 @@ Do the same on two more installations, so you have something to look at after th
 
 ## What you should see
 
-On three installations: a `Panels Required` value, visible in the Details tab, saved without error.
+On three installations: a `Panels Required` value, visible in the column of fields, saved without
+error.
 
 And in VS Code, **nothing at all**. The repository does not know about any of this yet. Your
 changes live in one org and nowhere else, which is exactly the state [Lab 1.5](1-5-retrieve-commit-and-publish-your-changes.md) exists to end.
@@ -162,6 +173,19 @@ changes live in one org and nowhere else, which is exactly the state [Lab 1.5](1
 **Object Manager does not list Installation.**
 You are in the wrong org. Check the Status section in VS Code, then reopen the org from **Orgs
 Manager**.
+
+**You click Open and no browser tab appears.**
+Older versions of the extension could fail to open the org without saying why. Update the
+extension, which is what **Auto Update** in [Lab 1.1](1-1-install-vs-code-and-sfdx-hardis.md) is
+for, and click **Open** again. Until then there is a second way in: in the **Status** section of the
+sfdx-hardis panel, under **Current Org**, click the first line, the address of the org. It opens
+your default org, which is `helios-dev` here.
+
+**Orgs Manager shows your scratch orgs as disconnected, and offers Reconnect instead of Open.**
+Older versions of the extension read only the connection probe, which a scratch org never carries:
+its Dev Hub answers for it instead. Update the extension, which is what **Auto Update** in
+[Lab 1.1](1-1-install-vs-code-and-sfdx-hardis.md) is for, then click **Refresh** in the panel. The
+orgs are fine either way, and **Reconnect** would have signed you in again for nothing.
 
 **The field does not appear on the record page.**
 You skipped the page layout step. **Setup > Object Manager > Installation > Page Layouts >
@@ -177,7 +201,7 @@ the top of the page instead: pick `Installation` there, and the object appears w
 
 ## Check your work
 
-Welcome page > **Training: Level 1** > **Check my work**, then pick Lab 1.4.
+Welcome page > **Training: Level 1** > **Check my work**, then pick **Lab 1.4**.
 
 Nothing of your work has left the org yet, so the check reads the org itself: it asks `helios-dev`
 whether `Panels_Required__c` exists on Installation and whether `Helios_Delivery_Crew` can read it.

@@ -7,15 +7,16 @@ lab: 5
 lang: en
 source_rev: ""
 screenshots:
-  - annotated/vscode/pipeline-cards--commit-changes
+  - annotated/vscode/pipeline-cards-level1--commit-changes
   - annotated/vscode/metadata-retriever-recent-changes--find
   - annotated/vscode/metadata-retriever-selected--us-014
   - annotated/vscode/source-control-retrieved--commit
-  - annotated/vscode/pipeline-cards--save-publish
+  - annotated/vscode/pipeline-cards-level1--save-publish
   - annotated/vscode/work-save-commit-ready
   - annotated/vscode/work-save-package-xml
   - annotated/vscode/pipeline-packages-menu--package-xml
   - annotated/vscode/package-xml--custom-field
+  - annotated/vscode/work-save-package-xml--cleaning
 depends_on:
   commands: [hardis:work:save]
   flags: []
@@ -56,7 +57,7 @@ on your machine.
 In the **DevOps Pipeline** panel, under **Project Contribution Workflow**, click the **Commit
 changes** card **(1)**.
 
-![The Commit changes card of the DevOps Pipeline panel](../../_assets/annotated/vscode/pipeline-cards--commit-changes.png)
+![The Commit changes card of the DevOps Pipeline panel](../../_assets/annotated/vscode/pipeline-cards-level1--commit-changes.png)
 
 It opens the **Metadata Retriever**, which is where every publish starts.
 
@@ -68,8 +69,9 @@ thousands of components an org contains. Click **Search Metadata** **(3)**.
 
 ![The Metadata Retriever listing the recent changes of the org](../../_assets/annotated/vscode/metadata-retriever-recent-changes--find.png)
 
-About thirty results come back **(4)**, each with what it is, its name, who last touched it and
-when. Every one of them carries your name, and most of them are not your story.
+The count of results is at **(4)**: a few dozen on your org, fewer in the picture. Each row says
+what it is, its name, who last touched it and when. Every one of them carries your name, and most of
+them are not your story.
 
 !!! info "Why the list is longer than your story"
     A scratch org remembers every component that arrived in it, however it arrived. In Lab 1.2,
@@ -83,7 +85,9 @@ when. Every one of them carries your name, and most of them are not your story.
 
 ### 3. Take yours, leave the rest
 
-Sorted newest first, your four are the four at the top. Tick them, and only them:
+Sort by **Last Updated Date**, newest first, and find your four. Tick them, and only them,
+by name rather than by position: Salesforce touches components of its own, and one of them
+landing between yours is exactly the kind of thing this step is about.
 
 1. **PermissionSet** `Helios_Delivery_Manager` **(1)** - the planners' edit access
 2. **PermissionSet** `Helios_Delivery_Crew` **(2)** - the crew's read access
@@ -105,6 +109,14 @@ Two rules make that decision for you, and they are the whole of this lab:
 The retriever writes those four components into `force-app/` as files. It changes nothing in
 Salesforce and nothing on your branch yet.
 
+!!! note "If it says the retrieve failed because of source conflicts"
+    **Failed to retrieve metadata due to source conflicts** means the files on your machine and the
+    components in the org both changed since the last time they agreed. Here that is not a
+    conflict, it is the point: you changed the org on purpose and the org is right. Take the
+    option that overwrites the local files and retrieve again. It matters on a real project, where
+    somebody else may have written those files; it does not here, where nothing but your own org
+    has touched them.
+
 ### 4. Commit what came down
 
 Open the **Source Control** panel **(1)**: in the left bar, the icon drawn as three small circles
@@ -112,6 +124,11 @@ joined by lines, like a branch. The four files the
 retrieve wrote are waiting there **(2)**.
 
 ![The Source Control panel with the four retrieved files](../../_assets/annotated/vscode/source-control-retrieved--commit.png)
+
+!!! tip "Read the list as a tree"
+    By default the panel lists full paths, and a Salesforce path is long enough to be unreadable.
+    The **...** menu at the right of the **Changes** header has **View as Tree**: the same files,
+    folded into the folders they live in. Set it once and VS Code remembers it.
 
 Click each one. VS Code opens the file's *diff*, the before and the after side by side, with the
 added lines in green and the removed ones in red. Reading the four takes a minute, and it is the
@@ -159,7 +176,7 @@ for the team, and that is what Save / Publish does.
 
 In the **DevOps Pipeline** panel, click the **Save / Publish** card **(1)**.
 
-![The Save / Publish card of the DevOps Pipeline panel](../../_assets/annotated/vscode/pipeline-cards--save-publish.png)
+![The Save / Publish card of the DevOps Pipeline panel](../../_assets/annotated/vscode/pipeline-cards-level1--save-publish.png)
 
 The first question is the one that catches everybody out.
 
@@ -246,8 +263,14 @@ full deployment is slower and never forgets anything, which is the right trade f
 
 ### 7. Read what the command did to your files
 
-Scroll back up the command's own panel. Between your answers it printed a few lines about cleaning:
-references to deleted components, and the pixel positions inside Flows. That is the project's
+Go back to the tab of the command. Save / Publish runs in a tab of its own, named
+**hardis:work:save** **(1)**, and it is still open next to the package viewer, waiting for your
+answer.
+
+![The Save / Publish command tab, with the two cleaning lines above the question](../../_assets/annotated/vscode/work-save-package-xml--cleaning.png)
+
+Between your answers it printed two lines about cleaning **(2)**: references to deleted components,
+and the pixel positions inside Flows. That is the project's
 automated cleaning, and it runs on every publish, on everybody's work, so that nobody has to
 remember the house rules.
 
@@ -286,10 +309,14 @@ which performed, in order:
 4. **Committed what it changed**, as `chore(sfdx-hardis): update package content` and
    `chore(sfdx-hardis): clean sfdx project`. Those commits are the tool's, not yours: yours is the
    one you wrote at step 4
-5. **Pushed** the branch to your fork (your own copy of the course repository on GitHub, for example `github.com/my-username/sfdx-hardis-training`)
+5. **Pushed** the branch to your fork
 
 Every one of those steps is configuration, not magic. Everything it did is in
 `config/.sfdx-hardis.yml`, and a project that wants different behaviour changes that file.
+
+<!-- command-links:start -->
+Command documentation: [hardis:work:save](https://sfdx-hardis.cloudity.com/hardis/work/save/)
+<!-- command-links:end -->
 
 </details>
 
@@ -305,7 +332,8 @@ panel and click **Publish Branch**.
   the field, the layout and the two permission sets
 - `manifest/package.xml` gaining one line, the new field, in a commit the tool made
 - Your branch on GitHub, in your fork (`github.com/my-username/sfdx-hardis-training`), under **Branches**
-- The DevOps Pipeline panel showing your branch feeding `integration`, with no Pull Request yet
+- The DevOps Pipeline panel still without your branch: it draws a branch once it has a Pull
+  Request, and yours gets one in [Lab 1.6](1-6-pull-request-deployment-check-and-merge.md)
 
 ## If it goes wrong
 
@@ -334,14 +362,14 @@ cleaning rules in the Under the hood block above. Nothing is lost in your org: c
 is committed, never what is in Salesforce.
 
 **Push is rejected.**
-Your fork (`github.com/my-username/sfdx-hardis-training`) moved, usually because you reset a level. Pull first: Source Control panel, **...** menu,
+Your fork moved, usually because you reset a level. Pull first: Source Control panel, **...** menu,
 **Pull**.
 
 ## Check your work
 
-Welcome page > **Training: Level 1** > **Check my work**, then pick Lab 1.5.
+Welcome page > **Training: Level 1** > **Check my work**, then pick **Lab 1.5**.
 
-It reads the copy of your branch in your fork (`github.com/my-username/sfdx-hardis-training`), the one Save / Publish pushed: the field, the
+It reads the copy of your branch in your fork, the one Save / Publish pushed: the field, the
 permission set granting it, and the layout carrying it. A commit that stayed on your machine does
 not count, because nobody else can see it.
 

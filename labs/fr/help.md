@@ -1,0 +1,142 @@
+---
+title: "Aide"
+description: "Où poser votre question quand une étape du cours ne fonctionne pas, et ce que Cloudity propose à une équipe qui utilise sfdx-hardis sur un vrai projet Salesforce : mise en place, formation et support."
+id: help
+lang: fr
+source_rev: "1651e48fae090ca8a17bcdbaee369e4501394d2a"
+---
+
+# Aide
+
+## Le cours et les outils sont gratuits
+
+Tout ce que ce cours enseigne est open source. La CLI sfdx-hardis et l'extension VS Code qui la
+pilote sont publiées sous licence AGPL-3.0, sur GitHub, et leur usage ne coûte rien :
+[hardisgroupcom/sfdx-hardis](https://github.com/hardisgroupcom/sfdx-hardis) et
+[hardisgroupcom/vscode-sfdx-hardis](https://github.com/hardisgroupcom/vscode-sfdx-hardis). Les labs
+que vous lisez, leurs captures d'écran et le projet Helios Energy sur lequel ils reposent sont dans
+[hardisgroupcom/sfdx-hardis-training](https://github.com/hardisgroupcom/sfdx-hardis-training), aux
+mêmes conditions. Il n'y a pas de version payante du produit derrière une page de ce cours, ni de
+version payante du cours.
+
+Les deux viennent de [Cloudity](https://cloudity.com/), un cabinet de conseil Salesforce. Cloudity a
+construit sfdx-hardis pour ses propres équipes de delivery, le publie au grand jour et continue de
+le maintenir là. N'importe qui peut ouvrir une issue ou une Pull Request, et une bonne partie de ce
+qui sort chaque mois a commencé par le rapport de bug de quelqu'un.
+
+## Quand une étape du cours ne fonctionne pas
+
+1. Ouvrez le bloc **En cas de problème** de l'étape. Il liste les deux ou trois façons dont cette
+   étape échoue d'habitude, et quoi faire pour chacune.
+2. Laissez un commentaire en bas de la page. Chaque page de ce cours se termine par une zone de
+   commentaires, adossée aux GitHub Discussions : dites quelle étape, ce que vous avez cliqué et ce
+   que vous avez vu. C'est le moyen le plus rapide de faire corriger la page, et cela aide la
+   personne suivante bloquée au même endroit.
+3. Pour le produit plutôt que pour le cours, lisez la
+   [documentation sfdx-hardis](https://sfdx-hardis.cloudity.com/) et cherchez dans les
+   [issues](https://github.com/hardisgroupcom/sfdx-hardis/issues) avant d'en ouvrir une.
+
+## Quand le cours a changé après votre fork
+
+Les pages des labs sont toujours à jour : vous les lisez sur ce site. Ce que contient votre fork
+est figé au jour où vous l'avez créé : les scripts derrière le menu **Training**, les stories de
+collègues de **Simulate my teammates**, les règles de **Check my work** et la configuration du
+projet. Quand le cours ajoute un lab ou corrige l'un de ces éléments, votre fork ne le reçoit pas
+tout seul.
+
+Chaque commande du cours vous le dit : elle compare d'abord votre fork au cours, et indique combien
+de changements vous manquent. **Where am I?** l'affiche toujours. Les changements des pages de
+labs, des traductions, du site et les badges des autres participants sont ignorés : vous les lisez
+ici, et ils ne changent rien à ce que votre fork exécute.
+
+Pour récupérer les changements, cliquez sur **Update my course** dans le menu Training de votre
+niveau, et attendez la fin. La commande merge le cours dans une branche à elle, créée depuis votre
+`integration`, et ouvre une Pull Request vers `integration`, comme tout changement dans ce cours.
+Elle attend ensuite les contrôles de cette Pull Request, la merge avec un commit de merge, jamais en
+squash, et ramène le résultat sur la branche où vous êtes. Il n'y a rien à cliquer entre les deux,
+et votre travail est conservé.
+
+Si un contrôle échoue, la commande s'arrête avant le merge et donne le lien de la Pull Request. Une
+fois le problème réglé, cliquez à nouveau sur **Update my course** : elle reprend la même Pull
+Request.
+
+Si le cours et vous avez modifié le même fichier, la commande s'arrête, annule tout et nomme les
+fichiers. Faites alors soit **Reset this level**, qui recommence le niveau depuis son état actuel et
+jette votre travail sur `integration` dans ce niveau, soit le merge à la main, comme le
+[Lab 2.7](level-2-contributor-advanced/2-7-resolve-a-git-merge-conflict.md) résout un conflit.
+
+## Quand Claim my badge dit que votre travail n'est que sur cet ordinateur
+
+**Claim my badge** s'arrête quand une branche contient des commits absents de votre fork, car
+l'audit lit votre fork sur GitHub. Push n'envoie que la branche sur laquelle vous êtes : passez sur
+chaque branche nommée, faites Push, puis réclamez à nouveau.
+
+Sur un fork créé avant le 2026-09-26, la commande peut aussi nommer `integration`, par exemple
+`integration [ahead 2]`, après un **Reset this level**, alors que votre travail est bien sur GitHub.
+Push n'y change rien : `integration` n'accepte que des Pull Requests. Cliquez sur
+**Update my course**, qui apporte la correction, puis réclamez à nouveau. Ou, dans un terminal de
+VS Code (**Terminal** > **New Terminal**) :
+
+```sh
+git fetch origin
+git branch --set-upstream-to=origin/integration integration
+```
+
+Aucune de ces deux commandes ne modifie votre travail ni votre fork. Réclamez ensuite à nouveau :
+inutile de refaire le niveau.
+
+## Recommencer le cours
+
+Il y a deux chemins pour revenir en arrière, selon jusqu'où vous voulez remonter.
+
+**Recommencer un niveau.** Cliquez sur **Reset this level** dans le menu Training de ce niveau. Il
+ramène `integration` au début du niveau, dans votre clone et dans votre fork. Puis il propose deux
+choses de plus, et à une deuxième tentative la réponse aux deux est en général oui :
+
+- **Supprimer les branches des labs de ce niveau**, ici et dans votre fork. Supprimer une branche
+  dans votre fork ferme sa Pull Request. Cela compte plus qu'il n'y paraît : les labs donnent à
+  chaque story un nom imposé, et **New User Story** ne réutilise jamais une branche qui existe déjà,
+  ici ou dans votre fork. Si les branches de votre première tentative sont encore là, il vous
+  demande un autre nom à chaque story
+- **Remettre en place `helios-dev` et `helios-integration`**, pour que les orgs correspondent au
+  début du niveau au lieu de garder ce que vous y avez construit la première fois
+
+**Recommencer tout le cours.** Sur GitHub, ouvrez votre fork, puis **Settings**, descendez jusqu'à
+la **Danger Zone**, et cliquez sur **Delete this repository**. Supprimez aussi votre dossier local.
+Suivez ensuite à nouveau le
+[Lab 1.2](level-1-contributor-basics/1-2-create-your-dev-hub-scratch-orgs-and-pipeline.md) à partir
+de [l'étape 3, Récupérer le repository](level-1-contributor-basics/1-2-create-your-dev-hub-scratch-orgs-and-pipeline.md#3-recuperer-le-repository) :
+votre org Developer Edition et sa connexion dans Orgs Manager sont toujours là, et
+**Set up my training environment** fait le reste, nouveau fork compris.
+
+## De l'aide sur un vrai projet
+
+Ce cours se déroule dans une entreprise fictive, avec des orgs gratuites et un repository que vous
+créez pour vous. Un vrai projet apporte ce qu'aucun cours ne peut vous donner : une org avec dix
+ans d'histoire dedans, une équipe qui doit continuer à livrer pendant que la pipeline se construit,
+et un calendrier de releases. Cloudity fait ce travail en prestation, par-dessus le même produit
+open source que ce cours enseigne.
+
+- **Mise en place.** Votre équipe pilote et un expert Cloudity relit le modèle de branches, le
+  pipeline et la configuration, ou bien Cloudity met toute la pipeline en place sur votre plateforme
+  Git et vous le transmet.
+- **Formation.** Des sessions pour les contributeurs, les release managers et les chefs de projet,
+  et l'accompagnement au changement qui fait qu'une nouvelle façon de travailler tient dans la
+  durée.
+- **Support.** Un abonnement qui garde un expert Cloudity joignable après la mise en production,
+  avec une priorité sur les incidents de déploiement, et un release manager en prestation quand
+  personne n'occupe le poste.
+
+## Le support est ce qui finance la maintenance de sfdx-hardis
+
+sfdx-hardis est gratuit à utiliser. Il n'est pas gratuit à maintenir. Trois releases Salesforce par
+an, des types de métadonnées qui changent de forme, des API qui bougent sous le produit, des bugs
+trouvés par des équipes qui déploient en production un vendredi : quelqu'un doit faire ce travail,
+semaine après semaine, et chez Cloudity ce quelqu'un est payé pour.
+
+Ce sont les abonnements de support qui le financent, et qui financent la gratuité de ce cours. Si
+votre équipe fait ses livraisons avec sfdx-hardis, un abonnement est le moyen le plus direct de
+garder le projet vivant et en mouvement, et il met vos demandes d'évolution devant les personnes
+qui décident de ce qui sort ensuite.
+
+[Ce que propose Cloudity](https://sfdx-hardis.cloudity.com/salesforce-devops-home/#get-help-from-cloudity){ .md-button .md-button--primary }

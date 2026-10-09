@@ -45,13 +45,39 @@ five things have to be on your machine, and the last of them installs most of th
     starts: free Salesforce orgs, a training repository, fictional data. None of that belongs on a
     real project.
 
+!!! tip "No VS Code? A browser tab or another editor does it"
+    [Agentforce Vibes](https://www.salesforce.com/agentforce/developers/vibe-coding/ide/) is VS Code inside Google Chrome, launched from a Salesforce org:
+    a developer sandbox, or the free Developer Edition org [Lab 1.2](1-2-create-your-dev-hub-scratch-orgs-and-pipeline.md)
+    signs you up for, which means this path costs nothing and needs nothing you do not already
+    create here. The whole course runs in it. Two differences and no others: the
+    Salesforce CLI is already there, so the part of the Setup panel that installs it has nothing to
+    do, and the extension comes from [Open VSX](https://open-vsx.org/extension/NicolasVuillamy/vscode-sfdx-hardis)
+    rather than the Visual Studio Marketplace. Every panel, every button and every step below is
+    the same, and so are the screenshots: they were taken in desktop VS Code, which is the same
+    editor.
+
+    [Cursor](https://cursor.com/) and the other editors built on VS Code work the same way, and from the same
+    Open VSX listing. Whichever one you use, the rest of this lab is written for what you see in it.
+
 ## Before you start
 
-- [ ] A computer where you can install software, and permission to do so
+- [ ] A computer where you can install software, and permission to do so, **or** any Salesforce
+      org to launch Agentforce Vibes from: a developer sandbox, or the free Developer Edition org
+      of Lab 1.2
 
 ## Steps
 
 ### 1. Install VS Code and the extension
+
+!!! tip "In Agentforce Vibes, start at the extensions"
+    The three downloads below are already in the tab: Git, Node.js and the editor itself come with
+    it. Skip them and go straight to [installing the extension pack](#install-the-extension-pack),
+    near the end of this step. One difference
+    there: the Extensions view of a browser IDE searches
+    [Open VSX](https://open-vsx.org/extension/NicolasVuillamy/vscode-sfdx-hardis) rather than the
+    Visual Studio Marketplace, and the pack is the same one under the same name. And wherever this
+    lab says to restart VS Code, reload the browser tab instead: it does the same thing, which is
+    to let the editor see what was just installed.
 
 First [Git](https://git-scm.com/downloads). Git is the tool that records every version of a project
 and moves it between your laptop and wherever your team keeps the project, and everything else in
@@ -70,9 +96,9 @@ errors that look like nothing to do with Git.
 
 Two screens are worth reading rather than clicking through:
 
-- **Select Components**: leave **Git Bash Here** and **Git GUI Here** ticked
-- **Adjusting your PATH environment**: keep the recommended middle option, *Git from the command
-  line and also from 3rd-party software*, so VS Code can find Git
+- **Select Components**: leave **Open Git Bash here** and **Open Git GUI here** ticked
+- **Adjusting your PATH environment**: keep the recommended middle option, **Git from the command
+  line and also from 3rd-party software**, so VS Code can find Git
 
 macOS and Linux already have a Unix shell, so there is nothing to choose there.
 
@@ -87,7 +113,7 @@ macOS and Linux already have a Unix shell, so there is nothing to choose there.
 
 Then open [Visual Studio Code](https://code.visualstudio.com/) and take the download for your machine.
 On Windows that is the **Windows** button **(1)**; the two cards next to it hold the macOS and Linux
-builds.
+builds. Its installer has nothing to choose: accept the licence and keep every default it offers.
 
 ![The Visual Studio Code download page, one card per operating system](../../_assets/annotated/web/vscode-download.png)
 
@@ -100,15 +126,17 @@ get right on that page:
 
 ![The Node.js download page, with the version selector and the installer buttons](../../_assets/annotated/web/nodejs-download.png)
 
-Both are next-next-finish installers.
+The Node.js installer is like the VS Code one: accept the licence and keep every default.
 
 !!! warning "Restart VS Code after installing Git or Node.js"
-    Both installers add themselves to the **PATH**, the list of places your machine looks for a
+    The Git and Node.js installers add themselves to the **PATH**, the list of places your machine looks for a
     command. A program only reads that list when it starts, so a VS Code that was already open when
     you installed them still cannot find them, and the Setup panel in step 2 reports them missing
     even though they are there. Close VS Code completely, windows and all, and open it again.
 
     The same applies to a terminal you already had open.
+
+<a id="install-the-extension-pack"></a>
 
 Then open VS Code and install the extensions. The **Extensions** icon **(1)** sits in the narrow bar
 down the left, and looks like four small squares with one lifted away. Click it, type `hardis` in
@@ -116,6 +144,14 @@ the search box **(2)**, and click **Install** on **SFDX Hardis Extension Pack fo
 Cloudity** **(3)**, published by Nicolas Vuillamy.
 
 ![The Extensions view of VS Code, with hardis typed in the search box](../../_assets/annotated/vscode/extensions-install.png)
+
+Two things happen around that click, and both are easy to miss:
+
+- VS Code may ask **Do you trust the publishers of these extensions?**. Answer **Trust Publishers &
+  Install**. A pack installs extensions from several publishers, and it stops there until you say so
+- Once it is installed, open the gear icon next to the pack and tick **Auto Update**. The course and
+  the product move together, and an extension a few versions behind is the most common reason a
+  panel in these labs does not look like its screenshot
 
 The pack installs sfdx-hardis itself along with the tools that go with it: Git Graph, which draws
 your branches, the YAML and Markdown support the configuration files use, and the Apex log viewer.
@@ -130,6 +166,10 @@ tab is where every lab of this course starts.
 
 You need the Salesforce CLI and a few plugins. You are not going to install them by hand: the
 extension has a panel that checks what is missing and installs it.
+
+!!! tip "In Agentforce Vibes, the Salesforce CLI is already there"
+    Its card is green before you start, and the panel has only the plugins left to install. Run the
+    same **Run pending installs** and read the same list; there is simply less of it.
 
 On the Welcome page, the button at the top left of the header band **(1)** opens the Setup panel.
 There is no card called Setup: the button is labelled with the state of your dependencies, so it
