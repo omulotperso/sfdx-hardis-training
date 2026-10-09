@@ -7,6 +7,7 @@ lab: 7
 lang: en
 source_rev: ""
 screenshots:
+  - annotated/web/github-star-sfdx-hardis
 depends_on:
   commands: [hardis:work:new, hardis:work:save]
   flags: []
@@ -52,15 +53,15 @@ No numbered clicks this time. The loop, in order:
 1. **Start the User Story.** Branch `US-016-crew-notes`, target `integration`, then **Scratch org**
    and **Reuse scratch org helios-dev**. Your org already has US-014, because you built it there
 2. **Build it in `helios-dev`**
-    - A **Long Text Area** field `Crew_Notes__c` on `Installation__c`, 4000 characters, with a
-      description and help text
-    - Grant it **Read** and **Edit** on `Helios Delivery Crew`, because a crew member writes notes.
-      Nobody else gets it yet: the planners' turn comes in Level 2
-    - On the Installation page layout
-    - A list view on Installation called **Open Installations**, visible to all users, with
-      **Filter by Owner** on **All installations**, filtered on a status that is not Completed, and
-      showing the account, the status, the install date and Panels Required
-3. **Bring it down.** **Commit changes**, **Recent Changes**, **Search Metadata**, and take the
+   - A **Long Text Area** field `Crew_Notes__c` on `Installation__c`, 4000 characters, with a
+     description and help text
+   - Grant it **Read** and **Edit** on `Helios Delivery Crew`, because a crew member writes notes.
+     Nobody else gets it yet: the planners' turn comes in Level 2
+   - On the Installation page layout
+   - A list view on Installation called **Open Installations**, visible to all users, with
+     **Filter by Owner** on **All installations**, filtered on a status that is not Completed, and
+     showing the account, the status, the install date and Panels Required
+3. **Retrieve it.** **Commit changes**, **Recent Changes**, **Search Metadata**, and take the
    field, the layout, the list view and the permission set. Nothing else. Commit them
 4. **Publish**, and read the **Git Delta package.xml** report before pushing. Four things, all
    yours
@@ -98,7 +99,7 @@ is not failing. Not using it and giving up is.
 
 ## Check your work
 
-Welcome page > **Training: Level 1** > **Check my work**, then pick **Everything in level 1**.
+Welcome page > **Training: Level 1** > **Check my work**, then pick **Everything in level 1, capstone included**.
 
 Six checks should pass. The receipt lines it prints are your progress record, and the claim below
 picks them up on its own.
@@ -114,23 +115,25 @@ would be rejected is a claim not worth opening. Then it opens the claim form of 
 repository in your browser, with the level, your username, your fork (your own copy of the course repository on GitHub, for example `github.com/my-username/sfdx-hardis-training`) and your receipts already in
 it. One field is not filled in: pick your level in the **Level** dropdown, because GitHub does
 not prefill a dropdown from a link and the form refuses to submit while it says *None*. Then tick
-the three boxes and click **Submit**.
+the three boxes and click **Create**.
 
-Those three boxes are yours to tick, and nothing ticks them for you. They say your fork (`github.com/my-username/sfdx-hardis-training`) is public
+Those three boxes are yours to tick, and nothing ticks them for you. They say your fork is public
 and your GitHub handle becomes public in the training repository, which is a decision about your
 name rather than a formality.
 
 !!! tip "If the course helped you"
     [hardisgroupcom/sfdx-hardis](https://github.com/hardisgroupcom/sfdx-hardis) is the open source
-    project this whole course is about. A star is how a project like it stays visible. It is up to
-    you: the badge does not depend on it.
+    project this whole course is about. A star is how a project like it stays visible: open its
+    page and click **Star** **(1)**, at the top right. Give it a star if you liked this course!
 
-A job then clones your fork (`github.com/my-username/sfdx-hardis-training`), re-runs every check above against it, and answers on the issue. Nobody
+    ![The Star button of the sfdx-hardis repository on GitHub](../../_assets/annotated/web/github-star-sfdx-hardis.png)
+
+A job then clones your fork, re-runs every check above against it, and answers on the issue. Nobody
 reviews it by hand, so it usually takes a couple of minutes. If something does not verify, the
 comment names the exact lab and what it looked for, you fix it, and you edit the issue to run it
 again.
 
-Your fork (`github.com/my-username/sfdx-hardis-training`) has to be **public** for the audit to read it. If it is private, the command offers to
+Your fork has to be **public** for the audit to read it. If it is private, the command offers to
 make it public.
 
 !!! note "It is a badge, not a certification"

@@ -5,7 +5,7 @@ description: "Générez une documentation lisible d'une org Salesforce non docum
 level: 3
 lab: 9
 lang: fr
-source_rev: "4661bc03d2558cec0b10dc8f320de2e8a4617d66"
+source_rev: "810d4dfb1955110f1f91b4b18f7de130b2a1cc98"
 screenshots:
   - annotated/vscode/documentation-workbench--generate-and-deploy
 depends_on:
@@ -188,6 +188,10 @@ Si le projet a un fournisseur d'IA configuré, le générateur peut aussi écrir
 manquantes plutôt que de laisser des vides. Utile, et pas un substitut aux trois paragraphes de
 l'étape 5 : un modèle peut décrire ce qu'est un champ, pas pourquoi le métier en a besoin.
 
+<!-- command-links:start -->
+Documentation des commandes : [hardis:doc:project2markdown](https://sfdx-hardis.cloudity.com/hardis/doc/project2markdown/), [hardis:doc:override-prompts](https://sfdx-hardis.cloudity.com/hardis/doc/override-prompts/), [hardis:doc:plugin:generate](https://sfdx-hardis.cloudity.com/hardis/doc/plugin/generate/)
+<!-- command-links:end -->
+
 </details>
 
 ## Ce que vous devez voir
@@ -215,10 +219,10 @@ suivantes produisent de petits diffs.
 
 ## Vérifiez votre travail
 
-Welcome page > **Training: Level 3** > **Check my work**, puis choisissez le Lab 3.9.
+Welcome page > **Training: Level 3** > **Check my work**, puis choisissez le **Lab 3.9**.
 
 ## Pour aller plus loin
 
 - [Générer la documentation](https://sfdx-hardis.cloudity.com/salesforce-project-doc-generate/)
 
-[Suite : Lab 3.10 - Épreuve finale : mener un cycle de release hebdomadaire](3-10-capstone-run-a-weekly-release-cycle.md){ .md-button .md-button--primary }
+[Suite : Lab 3.10 - Promouvoir un sous-ensemble avec les promotion branches (Beta)](3-10-promote-a-subset-with-promotion-branches.md){ .md-button .md-button--primary }

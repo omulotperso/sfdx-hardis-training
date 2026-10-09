@@ -5,15 +5,15 @@ description: "Une permission accordée sur un profil s'évapore après un déplo
 level: 2
 lab: 6
 lang: fr
-source_rev: "4661bc03d2558cec0b10dc8f320de2e8a4617d66"
+source_rev: "76638d6bc8fedd4ecbcb798f9b026bb80023e7bd"
 screenshots:
   - annotated/vscode/pipeline-cards--new-user-story
   - annotated/vscode/pipeline-config
 depends_on:
-  commands: [hardis:work:save]
-  flags: []
+  commands: [hardis:mdapi:read, hardis:work:save]
+  flags: [--active-only]
   config: [autoCleanTypes, minimizeProfiles, autoRemoveUserPermissions]
-  panels: [pipelineConfig, packageXml]
+  panels: [metadataRetriever, pipelineConfig, packageXml]
   docs: [salesforce-devops-work-on-user-story-profiles]
 ---
 
@@ -36,7 +36,7 @@ et découvrir qu'elle a été retirée exprès.
 Vous accordez la permission, vous publiez, le contrôle est vert, le déploiement est vert, et la
 permission n'est pas dans l'org d'intégration. Rien n'a échoué. Rien ne vous a averti.
 
-C'est le mode de défaillance qui fait perdre confiance dans un pipeline, et il s'explique
+C'est le mode de défaillance qui fait perdre confiance dans une pipeline, et il s'explique
 entièrement.
 
 ## Avant de commencer
@@ -64,9 +64,14 @@ Cost > Set Field-Level Security**, cochez **Visible** pour le profil **Helios Cr
 C'est ainsi que la plupart des gens accordent une permission, et c'est là-dessus que ce lab est
 construit.
 
-Faites-le descendre comme d'habitude : **Commit changes**, **Recent Changes**, **Search Metadata**,
+Faites-en un retrieve comme d'habitude : **Commit changes**, **Recent Changes**, **Search Metadata**,
 cochez le profil `Helios Crew`, récupérez, et commitez-le depuis **Source Control**. Puis
 **Save / Publish**, poussez, Pull Request, vert, merge.
+
+Le fichier est bien plus long que celui du repository. Le **Retrieve mode** du Metadata Retriever
+indique **Auto** : il récupère un profil en entier, toutes les permissions qu'il accorde dans
+`helios-dev`, donc votre nouvel accès à `Cost` s'y trouve, avec tout ce que le profil peut faire
+d'autre.
 
 ### 2. Découvrir qu'il ne s'est rien passé
 
@@ -98,19 +103,23 @@ même temps :
    d'objet, de champ, d'onglet, d'application et de classe de l'org. Deux personnes qui travaillent
    sur deux stories sans rapport produisent chacune un diff de mille lignes du même fichier, et elles
    entrent en conflit à chaque fois
-2. **Un profil récupéré dit non à ce qu'il n'avait pas.** Il liste les champs et objets de votre
-   package avec `false` partout où le profil n'avait pas accès au moment de la récupération. Si un
-   collègue en a accordé un depuis, déployer votre fichier **le lui éteint**, en silence
-3. **Ce que vous récupérez dépend de votre package.** Un profil est récupéré avec seulement les
-   permissions des composants de votre package : le même profil a donc une tête différente selon qui
-   l'a récupéré et quand
+2. **Un profil récupéré peut dire non à ce qu'il n'avait pas.** Récupéré de la façon standard, il
+   liste les champs et objets de votre package avec `false` partout où le profil n'avait pas accès
+   au moment de la récupération. Si un collègue en a accordé un depuis, déployer votre fichier
+   **le lui éteint**, en silence. Le mode **Auto** du Metadata Retriever laisse ces lignes `false`
+   de côté
+3. **Ce que vous récupérez dépend de la façon, et de l'org.** Récupéré de la façon standard, un
+   profil ne porte que les permissions des composants récupérés avec lui. Récupéré en entier, comme
+   le fait le Metadata Retriever en **Auto**, il porte tout ce que le profil a dans l'org d'où il
+   vient. Dans les deux cas, le même profil a une tête différente selon qui l'a récupéré, depuis
+   quelle org, et quand
 
 `minimizeProfiles` retire des profils tout ce qu'un permission set pourrait porter à la place, en
 laissant les profils ne contenir que ce qui ne peut vraiment vivre nulle part ailleurs : les plages
 horaires de connexion, les plages d'adresses IP, les types d'enregistrement par défaut, les
 affectations de présentation de page.
 
-Le pipeline n'a donc pas perdu votre travail. Il a refusé de le transporter, parce que le
+La pipeline n'a donc pas perdu votre travail. Elle a refusé de le transporter, parce que le
 transporter finirait par supprimer celui de quelqu'un d'autre.
 
 !!! note "Pourquoi les profils restent quand même dans le repository"
@@ -120,11 +129,14 @@ transporter finirait par supprimer celui de quelqu'un d'autre.
     chaque org. `Admin` et `Helios Crew` restent donc dans `force-app/main/default/profiles/`,
     restent dans `manifest/package.xml`, et sont déployés avec tout le reste.
 
-    Ils restent **courts** exprès. Un profil récupéré en entier liste des centaines de permissions
-    utilisateur, et Salesforce en ajoute et en retire à chaque release, trois fois par an : un profil
-    complet commité au printemps peut échouer au déploiement à l'automne sur une permission qui
-    n'existe plus. La version courte ne nomme que ce que ce projet a décidé, et `minimizeProfiles` la
-    garde courte à chaque fois que quelqu'un en publie un.
+    Ils ne portent **aucune permission de champ, d'objet, de classe ou de flow**, exprès, et aucune
+    permission utilisateur sauf sur `Admin`. Un profil récupéré en entier liste des centaines de
+    permissions utilisateur, et Salesforce en ajoute et en retire à chaque release, trois fois par an :
+    un profil complet commité au printemps peut échouer au déploiement à l'automne sur une permission
+    qui n'existe plus. `minimizeProfiles` retire ces permissions à chaque fois que quelqu'un publie un
+    profil. Ce qui reste peut quand même être long, car un profil récupéré en entier liste le réglage
+    d'onglet et la présentation de page de chaque objet de l'org : c'est exactement ce que seul un
+    profil peut porter.
 
 ### 5. Le faire comme le projet l'attend
 
@@ -162,7 +174,7 @@ et il vaut la peine de savoir lequel fait quoi :
 | `autoRemoveUserPermissions`        | **Salesforce Project** **(2)** | Des permissions utilisateur précises qui ne doivent jamais voyager entre orgs, quel qu'en soit le porteur |
 
 Les deux tournent sur votre machine, au moment où vous publiez : ils décident de ce que votre commit
-transporte. L'onglet voisin, **Deployment** **(3)**, décide comment le pipeline l'envoie dans chaque
+transporte. L'onglet voisin, **Deployment** **(3)**, décide comment la pipeline l'envoie dans chaque
 org. Celui-là appartient au release manager, et le Niveau 3 est là où vous le rencontrez.
 
 <details markdown="1"><summary>Sous le capot : ce que le nettoyage a vraiment fait au fichier</summary>
@@ -188,7 +200,7 @@ set ne sait pas exprimer :
 Et certaines sections ne sont jamais touchées, parce que rien d'autre ne peut les contenir :
 `loginHours`, `loginIpRanges`, `layoutAssignments`, `tabVisibilities`, `custom`, `userLicense`.
 
-Un profil a donc toujours un rôle dans ce pipeline. Simplement beaucoup plus petit.
+Un profil a donc toujours un rôle dans cette pipeline. Simplement beaucoup plus petit.
 
 Rien n'a été retiré de votre org. Le nettoyage change **ce que le repository transporte**, jamais ce
 que Salesforce contient. Votre autorisation à la mode admin est toujours dans `helios-dev`, et c'est
@@ -196,8 +208,12 @@ exactement pour cela que le lab vous demande de la refaire sur le permission set
 réparer le fichier à la main.
 
 La règle à retenir : **si une permission peut vivre sur un permission set, mettez-la là.** Ce n'est
-pas une opinion de sfdx-hardis, c'est ce que Salesforce recommande depuis des années, et ce pipeline
+pas une opinion de sfdx-hardis, c'est ce que Salesforce recommande depuis des années, et cette pipeline
 l'impose au lieu d'espérer.
+
+<!-- command-links:start -->
+Documentation de la commande : [hardis:work:save](https://sfdx-hardis.cloudity.com/hardis/work/save/)
+<!-- command-links:end -->
 
 </details>
 
@@ -219,13 +235,17 @@ L'utilisateur de CI ne peut pas accorder une permission qu'il n'a pas lui-même.
 **Training: Level 2 > Set up one of my training orgs**.
 
 **Le profil revient long de mille lignes.**
-Il a été commité après une récupération et n'est jamais passé par le nettoyage. Vérifiez que
+Un profil récupéré en entier garde, après le nettoyage, les réglages d'onglets et la mise en page
+de chaque objet de l'org, son application et ses types d'enregistrement par défaut, et sur `Admin`
+ses permissions utilisateur : ils restent exprès. S'il porte encore des
+permissions de champ, d'objet ou de classe, il a été commité après une récupération et n'est
+jamais passé par le nettoyage. Vérifiez que
 `minimizeProfiles` est toujours listé dans l'onglet **Salesforce Project** de **Pipeline Settings**,
 puis refaites **Save / Publish**. Ne raccourcissez pas le fichier à la main.
 
 ## Vérifiez votre travail
 
-Welcome page > **Training: Level 2** > **Check my work**, puis choisissez le Lab 2.6.
+Welcome page > **Training: Level 2** > **Check my work**, puis choisissez le **Lab 2.6**.
 
 ## Pour aller plus loin
 

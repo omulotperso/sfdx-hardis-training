@@ -12,10 +12,10 @@ screenshots:
   - annotated/vscode/sidebar
   - annotated/vscode/pipeline-cards--save-publish
 depends_on:
-  commands: [hardis:work:resetselection, hardis:work:save]
-  flags: []
+  commands: [hardis:mdapi:read, hardis:work:resetselection, hardis:work:save]
+  flags: [--active-only]
   config: []
-  panels: [commandExecution, packageXml]
+  panels: [metadataRetriever, commandExecution, packageXml]
   docs: [salesforce-devops-publish-user-story, salesforce-devops-manual-repo-clean]
 ---
 
@@ -62,15 +62,19 @@ Now open **Commit changes**, search the recent changes, and this time click the 
 
 ![The Metadata Retriever, with every row selected](../../_assets/annotated/vscode/metadata-retriever-recent-changes--select-all.png)
 
+In an org where Agentforce is on, the list can also carry `GenOpAgentConfig` rows, named after
+your flows. The Salesforce CLI does not know that type yet, so the retrieve stops and names it:
+untick those rows and retrieve again.
+
 ### 2. Look at what you did
 
 Look at the **Git Delta package.xml** report the publish offered: more than the one layout your story
 changed. Open the Pull Request and read the diff.
 
 At the very least there is **a Profile**, `Admin`, the System Administrator profile. The repository
-carries it short, a few lines, and it came back thousands of lines long: every field you created in
-Setup since Level 1 gave that profile field-level security, and a whole-org retrieve brings all of
-it along. What else comes depends on what your org went through, and
+carries it short, a few lines, and it came back hundreds of lines longer: the Metadata Retriever
+retrieves a Profile whole, every permission, tab and page layout it has in your org, and none of it
+is your story. What else comes depends on what your org went through, and
 a whole-org retrieve on a real project usually carries some of it:
 
 - **a list view** left over from an earlier story, still in your org, or a **transaction security
@@ -116,13 +120,18 @@ and the file is still on your disk.
 
 ### 4. Deal with what you already pushed
 
+**Nothing to click in this step.** It is a decision to make before step 5, and in this lab it is
+already made for you: nobody has reviewed your Pull Request, so you are in the first case below,
+and step 5 does what it says. Read the second case anyway, it is the one a real project will put
+you in.
+
 Locally you are clean. The branch on GitHub is not: it still carries the over-wide commit, because
 the reset only changed the copy on your machine.
 
-**Nobody has reviewed it** (the normal case): push the corrected branch over it once you have
-re-published in the next step. That is what the reset authorised, and the publish will offer it. The
-mistake disappears from the history as though it never happened, which on your own feature branch
-before review is exactly what you want.
+**Nobody has reviewed it** (the normal case, and yours here): the corrected branch goes over it when
+you publish again in step 5. That is what the reset authorised, and the publish does it without
+asking. The mistake disappears from the history as though it never happened, which on your own
+feature branch before review is exactly what you want.
 
 **Somebody has already reviewed it**, or the branch is shared: do not force push. Rewriting history
 under a reviewer is how a review comment ends up attached to a commit that no longer exists. Commit
@@ -182,6 +191,10 @@ The reason an over-wide selection produces deletions is worth stating plainly. I
 `integration`, and the diff reads as "remove what they added". A backpromote before starting
 ([Lab 2.1](2-1-backpromote-your-teammates-work.md)) is what prevents that.
 
+<!-- command-links:start -->
+Command documentation: [hardis:work:resetselection](https://sfdx-hardis.cloudity.com/hardis/work/resetselection/), [hardis:work:save](https://sfdx-hardis.cloudity.com/hardis/work/save/)
+<!-- command-links:end -->
+
 </details>
 
 ## What you should see
@@ -205,7 +218,7 @@ redo the story properly. Do not try to fix `integration` by hand.
 
 ## Check your work
 
-Welcome page > **Training: Level 2** > **Check my work**, then pick Lab 2.8.
+Welcome page > **Training: Level 2** > **Check my work**, then pick **Lab 2.8**.
 
 ## Go deeper
 

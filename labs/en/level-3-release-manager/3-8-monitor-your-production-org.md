@@ -14,7 +14,7 @@ screenshots:
 depends_on:
   commands: [hardis:org:configure:monitoring]
   flags: []
-  config: [monitoringRepository, monitoringCommands, monitoringDisable, notificationConfig, msTeamsWebhookUrl]
+  config: [monitoringRepository, deploymentRepository, monitoringCommands, monitoringDisable, notificationConfig, msTeamsWebhookUrl]
   panels: [monitoringConfig, orgMonitoring]
   docs: [salesforce-monitoring-home, salesforce-monitoring-config-github, salesforce-monitoring-grafana-v2]
 ---
@@ -67,8 +67,8 @@ alone, not because the two are alternatives. In a repository whose name does con
 the question is never asked at all, which is the state you want to be in before you start.
 
 So, before anything else: create an empty private repository called
-`sfdx-hardis-training-monitoring` on GitHub. Then bring it down the way [Lab 1.2](../level-1-contributor-basics/1-2-create-your-dev-hub-scratch-orgs-and-pipeline.md) brought this
-one down: **File > Open Folder** on an empty folder, **Source Control** panel, **Clone Repository**,
+`sfdx-hardis-training-monitoring` on GitHub. Then clone it the way [Lab 1.2](../level-1-contributor-basics/1-2-create-your-dev-hub-scratch-orgs-and-pipeline.md) cloned this
+one: **File > Open Folder** on an empty folder, **Source Control** panel, **Clone Repository**,
 and paste the address from the green **Code** button of your new repository. Nothing in this lab
 happens in the repository you have been working in all course.
 
@@ -105,23 +105,27 @@ It runs in a command panel and asks its questions one at a time, the way [Lab 3.
 1. **Did you configure the sfdx-hardis monitoring pre-requisites on your Git server ?** The second
    answer, *ℹ️ No, bring me to the documentation!*, opens that page and ends the command, so read it
    first if you have not
-2. **Please select or connect to the org that you want to monitor** - `helios-prod`. As in [Lab 3.1](3-1-configure-the-pipeline-up-to-production.md),
-   making it the default org restarts the command, so pick it again in the new panel
-3. **Branch monitoring_... does not exist on the remote server. Do you want to push it?** - yes.
+2. **Please select or connect to the org that you want to monitor** - `helios-prod`. The command makes it your default org. If it asks for the org a second time,
+   pick `helios-prod` again
+3. **What is the address of the CI/CD repository that deploys to this org? (optional)** - the
+   address of your fork, `https://github.com/<your-handle>/sfdx-hardis-training`. It is the mirror
+   of step 8: the monitoring repository records where the pipeline lives, so that a coding agent
+   opened in it can search your fork and its workflow runs too
+4. **Branch monitoring_... does not exist on the remote server. Do you want to push it?** - yes.
    This one comes before the certificate, not after, and it only appears the first time
-4. Then the certificate questions from [Lab 3.1](3-1-configure-the-pipeline-up-to-production.md), unchanged and in the same order: self-signed,
+5. Then the certificate questions from [Lab 3.1](3-1-configure-the-pipeline-up-to-production.md), unchanged and in the same order: self-signed,
    let sfdx-hardis configure the External Client App, encrypted certificate as a file, then the same
    stop while you store the two secrets, this time in the **monitoring** repository, then the name,
    the contact email and the profile of the app. The profile list is in the language of the org's
    user, as in [Lab 3.1](3-1-configure-the-pipeline-up-to-production.md)
-5. **Do you want to save the configuration on the remote server (auto-commit)?** - yes
+6. **Do you want to save the configuration on the remote server (auto-commit)?** - yes
 
 Last, it writes the workflow on `main` and says so: *The monitoring workflow on main now runs
 monitoring_...*. GitHub only schedules the workflows of the default branch, and only offers **Run
 workflow** for those, so the workflow that runs every monitored org lives on `main` and lists each
 monitoring branch.
 
-It never asks for a repository name or a git provider, because it creates neither. The authentication is the same code as [Lab 3.1](3-1-configure-the-pipeline-up-to-production.md): External Client App, JWT, two secrets to store,
+It never asks for a repository name to create or for a git provider, because it creates neither: the one address it asks for, your fork, it only records. The authentication is the same code as [Lab 3.1](3-1-configure-the-pipeline-up-to-production.md): External Client App, JWT, two secrets to store,
 this time in the **monitoring** repository. The key lands in `./.ssh/` rather than
 `config/branches/.jwt/`, and the configuration in a `.sfdx-hardis.yml` at the repository root, on a
 branch called `monitoring_` plus the org's domain, cut from `main`. The repository was empty, so it
@@ -167,6 +171,10 @@ Check the banner first **(1)**. **Org Monitoring Not Present (CI/CD Repo)** mean
 wrong folder: this panel reads the monitoring repository, not the one you have been working in all
 course. Open the monitoring repository and the banner goes.
 
+Under the monitored org, the panel shows the **Deployment repository** you gave the command in
+step 2: click it to open your fork in a new VS Code window. Had you left that question empty, the
+panel would offer **Set deployment repository** instead. It is optional either way.
+
 Each check is a card, and the two worth opening first are **Detect calls to deprecated API versions**
 **(2)** and **Detect unsecured Connected Apps in an org** **(3)**.
 
@@ -174,8 +182,10 @@ Be honest about what you are looking at. `helios-prod` is a Developer Edition or
 old, with one user in it and an app you deployed yourself. Nothing seeds it with the findings a
 two-year-old org has, and a report that comes back nearly clean is not a broken report.
 
-Nearly clean, not clean: the first run is red. The **Monitoring** job fails on **Detect if org
-limits are close to be reached**, with one limit at 100%: `ActiveScratchOrgs`, 3 of 3. `helios-prod`
+Nearly clean, not clean. The run itself is green, and that says nothing about the org: a monitoring
+job that ran to its end stays green even when it found issues, and turns red only when the job
+itself could not run. The findings are in the report. **Detect if org limits are close to be reached** has
+one limit at 100%: `ActiveScratchOrgs`, 3 of 3. `helios-prod`
 is also your Dev Hub, and your three training scratch orgs use every slot it has. That is a true
 finding, the kind a limit check exists for: on a real Dev Hub it means nobody on the team can create
 a scratch org until one expires.
@@ -278,20 +288,34 @@ The nightly backup is the underrated part. When somebody asks "when did that val
 change", the answer is a `git log` on the monitoring repository, and it works even for changes
 nobody made through the pipeline.
 
+The backup also writes an `AGENTS.md` at the root of the monitoring branch, and a `CLAUDE.md`
+pointing at it. It explains the repository to a coding agent: what each folder holds, what the
+backup skips, how to read the history, which checks run. With `deploymentRepository` set, it also
+tells the agent how to clone your fork next to it, read-only, find the branch that deploys to
+`helios-prod`, and read the workflow runs of both repositories. That is what lets an agent answer
+"was this change deployed by the pipeline, or made directly in production?".
+
 If your organisation runs Grafana, the results can feed [ready-made
 dashboards](https://sfdx-hardis.cloudity.com/salesforce-monitoring-grafana-v2/). That is out of
 scope here, and worth knowing exists.
+
+<!-- command-links:start -->
+Command documentation: [hardis:org:configure:monitoring](https://sfdx-hardis.cloudity.com/hardis/org/configure/monitoring/), [hardis:org:monitor:backup](https://sfdx-hardis.cloudity.com/hardis/org/monitor/backup/), [hardis:org:test:apex](https://sfdx-hardis.cloudity.com/hardis/org/test/apex/), [hardis:org:monitor:all](https://sfdx-hardis.cloudity.com/hardis/org/monitor/all/)
+<!-- command-links:end -->
 
 </details>
 
 ## What you should see
 
 - A second repository, created by you, with an **Org Monitoring sfdx-hardis** workflow run: the
-  backup, the Apex tests and MegaLinter green, and the Monitoring job red on `ActiveScratchOrgs`
+  backup, the Apex tests, MegaLinter and the Monitoring job all green
+- The `ActiveScratchOrgs` limit at 100% in the report, which the green run did not tell you
 - A full source backup of `helios-prod` committed in it
 - A first report you have read and triaged, however short it is
 - One notification channel configured
 - `monitoringRepository` in `config/.sfdx-hardis.yml` on `integration`, pointing at it
+- `deploymentRepository` in the monitoring branch's `.sfdx-hardis.yml`, pointing back at your fork,
+  and an `AGENTS.md` at the root of that branch
 
 ## If it goes wrong
 
@@ -322,7 +346,7 @@ not. Go back to step 1 and make the monitoring one.
 
 ## Check your work
 
-Welcome page > **Training: Level 3** > **Check my work**, then pick Lab 3.8.
+Welcome page > **Training: Level 3** > **Check my work**, then pick **Lab 3.8**.
 
 ## Go deeper
 

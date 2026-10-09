@@ -5,7 +5,7 @@ description: "Créez un champ personnalisé, accordez-le par un permission set e
 level: 1
 lab: 4
 lang: fr
-source_rev: "4661bc03d2558cec0b10dc8f320de2e8a4617d66"
+source_rev: "d0a3a04d32929b6ab52a1f9590ff383010fc3ea1"
 screenshots:
   - annotated/vscode/orgs-manager-actions
   - annotated/salesforce/object-manager-fields
@@ -75,10 +75,15 @@ sur le point d'y ajouter.
 | Field Label    | `Panels Required`                                             |
 | Length         | 4                                                             |
 | Decimal Places | 0                                                             |
-| Field Name     | `Panels_Required__c` (Salesforce le remplit depuis le label)  |
+| Field Name     | `Panels_Required` (Salesforce le remplit depuis le label)     |
 | Description    | `How many panels the crew has to load for this installation.` |
 | Help Text      | `Ask the planner if this is empty.`                           |
 | Required       | **non**                                                       |
+
+La case **Field Name** est ce que Salesforce appelle le nom d'API, et il la remplit depuis le label
+au fur et à mesure que vous tapez. Elle affiche `Panels_Required`, sans le `__c` : Salesforce
+ajoute ce suffixe à chaque champ personnalisé au moment de l'enregistrement, et la suite de ce
+cours, fichiers de métadonnées compris, appelle le champ `Panels_Required__c`.
 
 L'écran de sécurité au niveau des champs arrive avec **Visible** déjà coché pour presque tous les
 profils. Décochez-les : la case dans l'en-tête de la colonne **Visible** bascule toute la colonne,
@@ -129,11 +134,12 @@ permission set n'accorde pas.
 ### 4. Le mettre là où les gens regarderont
 
 Le champ est sur la présentation de page, celle qu'utilisent les pages Salesforce à l'ancienne. La
-page d'enregistrement Installation est une page Lightning, et elle affiche la présentation de page à
-l'intérieur de son onglet **Details** : vous avez donc déjà fini.
+page d'enregistrement Installation est une page Lightning, et la colonne de champs à sa gauche est
+cette présentation de page : vous avez donc déjà fini.
 
 Ouvrez n'importe quelle installation (**App Launcher > Helios Delivery > Installations**, prenez
-`INST-00001`) et regardez l'onglet **Details**. `Panels Required` est là, vide.
+`INST-00001`) et regardez le bas de cette colonne. `Panels Required` est là, vide, avec à côté de
+son nom le petit **i** du texte d'aide que vous avez écrit.
 
 ### 5. Le tester sur de vraies données
 
@@ -145,10 +151,11 @@ L'onglet **Installations** **(1)** est la façon de revenir à cette liste depui
 l'application. À droite de l'enregistrement se trouve le **Panel delivery timeline** **(2)**, qui
 liste les palettes réservées pour cette installation avec leurs quantités. L'image a été prise avant
 que cette story existe, sur une installation sans palette réservée : il n'y a donc pas non plus de
-Panels Required dans ses Details. La plupart des installations ont deux ou trois palettes.
+Panels Required dans sa colonne. La plupart des installations ont deux ou trois palettes.
 
-1. Sur `INST-00001`, cliquez sur **Edit**, mettez **Panels Required** au nombre auquel la timeline
-   aboutit, et **Save**
+1. Sur `INST-00001`, cliquez sur le crayon à droite de **Panels Required**, tapez le nombre auquel
+   la timeline aboutit, et cliquez sur **Save** en bas de la page. Cette page n'a pas de bouton
+   **Edit** : chaque champ se modifie sur place, avec son propre crayon
 2. Regardez les deux nombres côte à côte. Sur une vraie story, vous demanderiez au planificateur si
    ce champ doit être saisi ou calculé à partir des palettes. Ici, la saisie est ce que demande la
    story, et cette question est exactement celle qu'un bon contributeur pose avant de construire quoi
@@ -159,8 +166,8 @@ déploiement.
 
 ## Ce que vous devez voir
 
-Sur trois installations : une valeur `Panels Required`, visible dans l'onglet Details, enregistrée
-sans erreur.
+Sur trois installations : une valeur `Panels Required`, visible dans la colonne de champs,
+enregistrée sans erreur.
 
 Et dans VS Code, **rien du tout**. Le repository ne sait encore rien de tout cela. Vos modifications
 vivent dans une org et nulle part ailleurs, et c'est exactement l'état auquel le [Lab
@@ -171,6 +178,21 @@ vivent dans une org et nulle part ailleurs, et c'est exactement l'état auquel l
 **Object Manager ne liste pas Installation.**
 Vous êtes dans la mauvaise org. Vérifiez la section Status dans VS Code, puis rouvrez l'org depuis
 **Orgs Manager**.
+
+**Vous cliquez sur Open et aucun onglet de navigateur n'apparaît.**
+Les anciennes versions de l'extension pouvaient échouer à ouvrir l'org sans dire pourquoi. Mettez
+l'extension à jour, c'est à cela que sert **Auto Update** dans le
+[Lab 1.1](1-1-install-vs-code-and-sfdx-hardis.md), et cliquez de nouveau sur **Open**. En attendant,
+il existe une seconde entrée : dans la section **Status** du panneau sfdx-hardis, sous **Current
+Org**, cliquez sur la première ligne, l'adresse de l'org. Elle ouvre votre org par défaut, qui est
+`helios-dev` ici.
+
+**Orgs Manager affiche vos scratch orgs comme déconnectées, et propose Reconnect au lieu d'Open.**
+Les anciennes versions de l'extension ne lisaient que la sonde de connexion, qu'une scratch org ne
+porte jamais : c'est son Dev Hub qui répond pour elle. Mettez l'extension à jour, ce à quoi sert
+**Auto Update** au [Lab 1.1](1-1-install-vs-code-and-sfdx-hardis.md), puis cliquez sur **Refresh**
+dans le panneau. Les orgs vont bien dans les deux cas, et **Reconnect** vous aurait reconnecté pour
+rien.
 
 **Le champ n'apparaît pas sur la page d'enregistrement.**
 Vous avez sauté l'étape de présentation de page. **Setup > Object Manager > Installation > Page
@@ -187,7 +209,7 @@ avec ses champs.
 
 ## Vérifiez votre travail
 
-Welcome page > **Training: Level 1** > **Check my work**, puis choisissez le Lab 1.4.
+Welcome page > **Training: Level 1** > **Check my work**, puis choisissez le **Lab 1.4**.
 
 Rien de votre travail n'a encore quitté l'org, le contrôle lit donc l'org elle-même : il demande à
 `helios-dev` si `Panels_Required__c` existe sur Installation et si `Helios_Delivery_Crew` peut le

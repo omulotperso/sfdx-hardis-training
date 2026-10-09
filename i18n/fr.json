@@ -96,7 +96,7 @@
         "niveau 2 rejoue aussi les vérifications du niveau 1, et un badge de niveau 3 rejoue les trois.",
         "",
         "Ce qui est vérifié, c'est le travail dans le repository : les champs, les deployment actions, les",
-        "conflits résolus, la configuration du pipeline. Ce qui n'est **pas** vérifié, c'est l'état des orgs",
+        "conflits résolus, la configuration de la pipeline. Ce qui n'est **pas** vérifié, c'est l'état des orgs",
         "Salesforce de qui que ce soit. Personne ne demande d'identifiants d'org, et ceci n'est pas un examen."
       ]
     },
@@ -110,7 +110,31 @@
     "takeTheCourse": "Suivre le cours",
     "description": "{name} a obtenu le badge {badge} de la formation Salesforce DevOps gratuite avec sfdx-hardis, vérifié par un job qui a lu son repository public.",
     "shareHeading": "Le partager",
-    "shareText": "{name} a obtenu le badge {badge} de la formation Salesforce DevOps gratuite avec sfdx-hardis",
+    "shareTitle": "{name} a obtenu le badge {badge}",
+    "shareIntro": "LinkedIn s'ouvre avec ce post déjà écrit. Il est aussi ici, à copier :",
+    "shareText": "Je viens d'obtenir le badge {badge} de la formation Salesforce DevOps gratuite avec sfdx-hardis",
+    "postText": [
+      "Je viens d'obtenir le badge {badge} 🎉 {page}",
+      "",
+      "Une formation Salesforce DevOps gratuite et concrète : de vraies Pull Requests, une vraie pipeline, vérifiées sur mon repository public.",
+      "",
+      "Obtenez le vôtre : {course}",
+      "",
+      "#Salesforce #DevOps #sfdxhardis"
+    ],
+    "picture": {
+      "heading": "Le publier avec l'image en grand",
+      "body": [
+        "LinkedIn affiche un lien en petite vignette. Pour montrer le badge en grand, joignez cette image au post :"
+      ],
+      "steps": [
+        "Téléchargez l'image.",
+        "Copiez le post ci-dessus, avec le bouton en haut à droite.",
+        "[Commencez un post sur LinkedIn](https://www.linkedin.com/feed/?shareActive=true), collez le texte et ajoutez l'image."
+      ],
+      "download": "Télécharger l'image",
+      "alt": "{name}, {badge}"
+    },
     "networks": {
       "linkedin": "LinkedIn",
       "x": "X",
@@ -144,7 +168,7 @@
     },
     "cast": {
       "victor": {
-        "role": "Release manager. A quitté l'entreprise entre le niveau 2 et le niveau 3, et c'est pour cela que le pipeline est le vôtre maintenant."
+        "role": "Release manager. A quitté l'entreprise entre le niveau 2 et le niveau 3, et c'est pour cela que la pipeline est la vôtre maintenant."
       },
       "mariia": {
         "role": "Contributrice senior. Merge avant vous, sur les fichiers que vous avez touchés."
@@ -197,6 +221,15 @@
         "title": "Générer un PDF de devis depuis une opportunité",
         "story": "En tant que commercial, je veux un bouton qui génère le PDF du devis, afin d'arrêter de le refaire dans un tableur.",
         "acceptance": ["L'autorisation est donnée aux managers"]
+      },
+      "US-050": {
+        "title": "Configurer la pipeline jusqu'à la production",
+        "story": "En tant que release manager, je veux que la pipeline passe par preprod jusqu'à la production, avec les deux orgs authentifiées par JWT, afin que chaque release arrive en production de la même façon.",
+        "acceptance": [
+          "preprod et main nomment chacune leur org dans leur configuration de branch",
+          "preprod et main s'authentifient avec une External Client App et JWT",
+          "Les contributeurs peuvent démarrer un hotfix depuis preprod"
+        ]
       },
       "US-052": {
         "title": "La présentation de page Installation sur deux colonnes",
@@ -303,8 +336,60 @@
           "Une formule Crew Workload sur Installation",
           "Sur la présentation de page, lisible par les managers"
         ]
+      },
+      "US-062": {
+        "title": "Réunir les delivery managers dans un groupe Crew Leads",
+        "story": "En tant que planificateur, je veux tous les delivery managers dans un même groupe Crew Leads, afin de partager les plannings d'installation une seule fois au lieu de personne par personne.",
+        "acceptance": [
+          "Un groupe public Crew Leads qui contient tous les delivery managers",
+          "La capacité des équipes recalculée une fois après le déploiement"
+        ]
+      },
+      "US-057": {
+        "title": "Mettre en pause une installation qui attend une pièce",
+        "story": "En tant que planificateur, je veux un statut pour une installation bloquée par une pièce manquante, afin que le rapport hebdomadaire cesse de la compter en retard.",
+        "acceptance": [
+          "Status propose Awaiting Parts",
+          "Les planificateurs peuvent le choisir sur une installation déjà planifiée"
+        ]
+      },
+      "US-058": {
+        "title": "Enregistrer la durée de garantie sur un panel batch",
+        "story": "En tant que commercial, je veux que la durée de garantie soit stockée sur le panel batch, afin que le devis dise combien de temps les panneaux sont couverts.",
+        "acceptance": [
+          "Un champ Warranty Years existe sur Panel Batch",
+          "Il est sur la présentation de page Panel Batch",
+          "Les managers peuvent le lire et l'écrire"
+        ]
+      },
+      "US-059": {
+        "title": "Enregistrer le fournisseur d'un panel batch",
+        "story": "En tant qu'acheteur, je veux que le fournisseur soit stocké sur le panel batch, afin qu'une demande de garantie parte chez la bonne entreprise sans ressortir la facture.",
+        "acceptance": [
+          "Un champ Supplier existe sur Panel Batch",
+          "Il est sur la présentation de page Panel Batch",
+          "Les managers peuvent le lire et l'écrire"
+        ]
+      },
+      "US-060": {
+        "title": "Signaler une installation qui a besoin d'un échafaudage",
+        "story": "En tant que planificateur, je veux signaler une installation qui a besoin d'un échafaudage, afin que l'équipe le réserve avant le jour J au lieu de le découvrir sur place.",
+        "acceptance": [
+          "Une case à cocher Scaffolding Required existe sur Installation",
+          "Elle est sur la présentation de page Installation",
+          "Les équipes de pose la voient, les planificateurs la cochent"
+        ]
+      },
+      "US-061": {
+        "title": "Enregistrer le code du portail d'un site",
+        "story": "En tant que membre de l'équipe de pose, je veux le code du portail du site sur l'installation, afin d'entrer sans appeler le client à sept heures du matin.",
+        "acceptance": [
+          "Un champ Gate Code existe sur Installation",
+          "Il est sur la présentation de page Installation",
+          "Les équipes de pose le lisent, les planificateurs le modifient"
+        ]
       }
     }
   },
-  "source_rev": "1489b38e601d7e10cf76725494c1c357c5680884"
+  "source_rev": "49867d0ab53fa391f400568c0766825218f86b28"
 }

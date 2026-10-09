@@ -180,6 +180,10 @@ If the project has an AI provider configured, the generator can also write the m
 rather than leaving blanks. Useful, and not a substitute for the three paragraphs in step 5: a model
 can describe what a field is, not why the business needs it.
 
+<!-- command-links:start -->
+Command documentation: [hardis:doc:project2markdown](https://sfdx-hardis.cloudity.com/hardis/doc/project2markdown/), [hardis:doc:override-prompts](https://sfdx-hardis.cloudity.com/hardis/doc/override-prompts/), [hardis:doc:plugin:generate](https://sfdx-hardis.cloudity.com/hardis/doc/plugin/generate/)
+<!-- command-links:end -->
+
 </details>
 
 ## What you should see
@@ -205,10 +209,10 @@ small diffs.
 
 ## Check your work
 
-Welcome page > **Training: Level 3** > **Check my work**, then pick Lab 3.9.
+Welcome page > **Training: Level 3** > **Check my work**, then pick **Lab 3.9**.
 
 ## Go deeper
 
 - [Generate documentation](https://sfdx-hardis.cloudity.com/salesforce-project-doc-generate/)
 
-[Next: Lab 3.10 - Capstone: run a weekly release cycle](3-10-capstone-run-a-weekly-release-cycle.md){ .md-button .md-button--primary }
+[Next: Lab 3.10 - Promote a subset with promotion branches (Beta)](3-10-promote-a-subset-with-promotion-branches.md){ .md-button .md-button--primary }

@@ -5,7 +5,7 @@ description: "Livrez un hotfix Salesforce de preprod vers la production quand la
 level: 3
 lab: 7
 lang: fr
-source_rev: "4661bc03d2558cec0b10dc8f320de2e8a4617d66"
+source_rev: "227087b70542c7fdd5f235321968b5154475be67"
 screenshots:
   - annotated/salesforce/validation-rule
   - annotated/vscode/welcome-custom-menu-3
@@ -34,7 +34,7 @@ depends_on:
 **Durée** : ~35 min
 
 **Vous allez** : mener une formule cassée de la production jusqu'à un correctif en ligne, puis
-ramener ce correctif dans le pipeline pour que rien ne le défasse.
+ramener ce correctif dans la pipeline pour que rien ne le défasse.
 
 ## La situation
 
@@ -47,7 +47,7 @@ La formule de la règle de validation `Installation_Date_Not_Past` exempte les i
 voit donc opposer une règle sur sa planification. C'est une condition manquante, et cela empêche les
 planificateurs de boucler leur semaine.
 
-**Un hotfix ne saute pas le pipeline.** Il y entre plus loin. Une story ordinaire part
+**Un hotfix ne saute pas la pipeline.** Il y entre plus loin. Une story ordinaire part
 d'`integration` et voyage `integration` vers `uat` vers `preprod` vers `main`. Un hotfix part de
 `preprod`, la branche qui contient exactement ce que la production fait tourner, et voyage `preprod`
 vers `main`. Mêmes branches, même protection, mêmes contrôles, mêmes jobs de déploiement. Seul le
@@ -132,7 +132,9 @@ Petite, et son rayon d'impact tient en une phrase : **les installations annulée
 
 ### 4. Le merger dans preprod
 
-Quand le contrôle est vert, **Merge pull request** **(1)** :
+Quand le contrôle est vert, mergez-la avec **Squash and merge**, depuis la flèche à côté de **Merge
+pull request** **(1)** : la branche de Romain est un correctif, et un correctif se squashe comme
+chaque User Story ([Lab 1.6](../level-1-contributor-basics/1-6-pull-request-deployment-check-and-merge.md)). La promotion vers `main` qui suit est mergée, pas squashée.
 
 ![Merger une Pull Request sur GitHub](../../_assets/annotated/web/github-pr-merge.png)
 
@@ -158,7 +160,9 @@ Son contrôle déploie contre la production en mode validation, ce qui est exact
 
 Mergez, et regardez l'exécution **Process Deployment (sfdx-hardis)** sur `main`. Quand elle se
 termine, le commentaire sfdx-hardis dit ce qui a atteint l'org : la bannière **(1)**, la ligne de
-compteurs **(2)**, et les tickets qu'il a reconnus **(3)**.
+compteurs **(2)**, et la ligne Quick Deploy **(3)** : le merge a libéré la validation que son contrôle
+avait déjà faite sur la production, au lieu de déployer à nouveau. L'image est le commentaire d'un
+déploiement précédent, vos compteurs sont donc différents.
 
 ![Le commentaire sfdx-hardis sur une Pull Request mergée](../../_assets/annotated/web/github-pr-deployed.png)
 
@@ -212,7 +216,7 @@ Puis la Command Palette à nouveau, tapez `Git: Merge`, et choisissez **Git: Mer
 
 ![Git Merge dans la Command Palette](../../_assets/annotated/vscode/git-palette-merge--merge.png)
 
-Elle demande quelle branche faire entrer. Choisissez **origin/main** **(1)**, listée sous
+Elle demande quelle branche merger. Choisissez **origin/main** **(1)**, listée sous
 **remote branches** :
 
 ![Le sélecteur de branche, avec origin main](../../_assets/annotated/vscode/git-retrofit-pick--origin-main.png)
@@ -247,7 +251,7 @@ plus emporter le correctif.
 
 **Le hotfix** n'a rien utilisé de spécial. Romain a lancé `hardis:work:new` avec `preprod` comme
 branche cible, ce qui tire sa branche de `preprod`, et `hardis:work:save` a calculé le package par
-rapport à `preprod`. Le pipeline traite `preprod` comme n'importe quelle autre branche majeure. Ce
+rapport à `preprod`. La pipeline traite `preprod` comme n'importe quelle autre branche majeure. Ce
 qui en fait un hotfix est la cible, pas un mode.
 
 Le préfixe de branche mérite une seconde de réflexion, pour une raison qui dépasse le rangement : le
@@ -265,11 +269,15 @@ celle-ci compte donc.
 
 La direction est tout le sujet. Le travail remonte normalement **vers le haut**, d'une branche de
 story vers `integration`, puis `uat`, puis `preprod`, puis `main`. Un retrofit est la seule chose qui
-descend, et il existe parce qu'un hotfix a rejoint le pipeline au-dessus des branches sur lesquelles
+descend, et il existe parce qu'un hotfix a rejoint la pipeline au-dessus des branches sur lesquelles
 l'équipe travaille.
 
 **Faites-le le soir même.** Un retrofit remis à lundi est un retrofit qui se heurte à une semaine de
 travail neuf, et le merge cesse d'être une formalité.
+
+<!-- command-links:start -->
+Documentation des commandes : [hardis:work:new](https://sfdx-hardis.cloudity.com/hardis/work/new/), [hardis:work:save](https://sfdx-hardis.cloudity.com/hardis/work/save/)
+<!-- command-links:end -->
 
 </details>
 

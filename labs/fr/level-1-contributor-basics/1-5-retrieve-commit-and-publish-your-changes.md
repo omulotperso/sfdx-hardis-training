@@ -1,21 +1,22 @@
 ---
 id: lab-1-5
 title: "Lab 1.5 - Récupérer, commiter et publier vos modifications Salesforce"
-description: "Faites entrer vos modifications d'org dans Git avec le Metadata Retriever de sfdx-hardis, ne stagez que les fichiers de votre story, commitez, et publiez votre branche."
+description: "Rapatriez vos modifications d'org dans Git avec le Metadata Retriever de sfdx-hardis, ne stagez que les fichiers de votre story, commitez, et publiez votre branche."
 level: 1
 lab: 5
 lang: fr
-source_rev: "4661bc03d2558cec0b10dc8f320de2e8a4617d66"
+source_rev: "b7f5e0686a2d5a83a1ce183f8f4c30a684e0a129"
 screenshots:
-  - annotated/vscode/pipeline-cards--commit-changes
+  - annotated/vscode/pipeline-cards-level1--commit-changes
   - annotated/vscode/metadata-retriever-recent-changes--find
   - annotated/vscode/metadata-retriever-selected--us-014
   - annotated/vscode/source-control-retrieved--commit
-  - annotated/vscode/pipeline-cards--save-publish
+  - annotated/vscode/pipeline-cards-level1--save-publish
   - annotated/vscode/work-save-commit-ready
   - annotated/vscode/work-save-package-xml
   - annotated/vscode/pipeline-packages-menu--package-xml
   - annotated/vscode/package-xml--custom-field
+  - annotated/vscode/work-save-package-xml--cleaning
 depends_on:
   commands: [hardis:work:save]
   flags: []
@@ -30,7 +31,7 @@ depends_on:
 
 **Durée** : ~20 min
 
-**Vous allez** : faire entrer vos modifications d'org dans le repository, décider lesquelles appartiennent
+**Vous allez** : rapatrier vos modifications d'org dans le repository, décider lesquelles appartiennent
 à votre story, et pousser une branche prête à être relue.
 
 ## La situation
@@ -39,7 +40,7 @@ Votre champ existe dans une seule org. Si votre portable rendait l'âme ce soir,
 Publier, c'est ce qui transforme "ça marche dans mon org" en "l'équipe l'a".
 
 C'est l'étape où se concentre l'essentiel de la réflexion dans un projet CI/CD, et celle que les gens
-expédient. Allez lentement ici une fois, et chaque story suivante prendra cinq minutes.
+expédient. Allez lentement cette fois-ci, et chaque story suivante prendra cinq minutes.
 
 ## Avant de commencer
 
@@ -51,13 +52,13 @@ expédient. Allez lentement ici une fois, et chaque story suivante prendra cinq 
 
 ### 1. Sortir vos modifications de l'org
 
-Votre champ est dans Salesforce. Rien de lui n'est encore sur votre machine, et git ne voit jamais
-que ce qui est sur votre machine.
+Votre champ est dans Salesforce. Rien de lui n'est encore sur votre machine, et git voit uniquement
+ce qui est sur votre machine.
 
 Dans le panneau **DevOps Pipeline**, sous **Project Contribution Workflow**, cliquez sur la carte
 **Commit changes** **(1)**.
 
-![La carte Commit changes du panneau DevOps Pipeline](../../_assets/annotated/vscode/pipeline-cards--commit-changes.png)
+![La carte Commit changes du panneau DevOps Pipeline](../../_assets/annotated/vscode/pipeline-cards-level1--commit-changes.png)
 
 Elle ouvre le **Metadata Retriever**, par lequel commence chaque publication.
 
@@ -70,8 +71,9 @@ sur **Search Metadata** **(3)**.
 
 ![Le Metadata Retriever listant les modifications récentes de l'org](../../_assets/annotated/vscode/metadata-retriever-recent-changes--find.png)
 
-Une trentaine de résultats reviennent **(4)**, chacun avec ce qu'il est, son nom, qui l'a touché en
-dernier et quand. Tous portent votre nom, et la plupart ne sont pas votre story.
+Le nombre de résultats est en **(4)** : quelques dizaines sur votre org, moins sur l'image. Chaque
+ligne dit ce qu'elle est, son nom, qui l'a touchée en dernier et quand. Toutes portent votre nom, et
+la plupart ne sont pas votre story.
 
 !!! info "Pourquoi la liste est plus longue que votre story"
     Une scratch org se souvient de chaque composant qui y est arrivé, quelle qu'en soit la voie. Au
@@ -113,13 +115,27 @@ Deux règles prennent cette décision à votre place, et elles sont tout ce lab 
 Le retriever écrit ces quatre composants dans `force-app/` sous forme de fichiers. Il ne change rien
 dans Salesforce et rien sur votre branche pour l'instant.
 
-### 4. Commiter ce qui est descendu
+!!! note "S'il dit que la récupération a échoué à cause de conflits de sources"
+    **Failed to retrieve metadata due to source conflicts** veut dire que les fichiers de votre
+    machine et les composants de l'org ont changé tous les deux depuis leur dernier accord. Ici ce
+    n'est pas un conflit, c'est le but : vous avez modifié l'org exprès, et c'est l'org qui a
+    raison. Prenez l'option qui écrase les fichiers locaux et relancez la récupération. Cela
+    compte sur un vrai projet, où quelqu'un d'autre a pu écrire ces fichiers ; pas ici, où rien
+    d'autre que votre propre org n'y a touché.
+
+### 4. Commiter ce que vous avez rapatrié
 
 Ouvrez le panneau **Source Control** **(1)** : dans la barre de gauche, l'icône dessinée comme trois
 petits cercles reliés par des traits, à la manière d'une branche. Les quatre fichiers écrits par la
 récupération y attendent **(2)**.
 
 ![Le panneau Source Control avec les quatre fichiers récupérés](../../_assets/annotated/vscode/source-control-retrieved--commit.png)
+
+!!! tip "Lisez la liste en arborescence"
+    Par défaut le panneau affiche les chemins complets, et un chemin Salesforce est assez long pour
+    être illisible. Le menu **...** à droite de l'en-tête **Changes** propose **View as Tree** :
+    les mêmes fichiers, repliés dans les dossiers où ils vivent. Réglez-le une fois et VS Code s'en
+    souvient.
 
 Cliquez sur chacun. VS Code ouvre le *diff* du fichier, l'avant et l'après côte à côte, avec les
 lignes ajoutées en vert et les lignes supprimées en rouge. Lire les quatre prend une minute, et c'est
@@ -169,7 +185,7 @@ préparer pour l'équipe, et c'est ce que fait Save / Publish.
 
 Dans le panneau **DevOps Pipeline**, cliquez sur la carte **Save / Publish** **(1)**.
 
-![La carte Save / Publish du panneau DevOps Pipeline](../../_assets/annotated/vscode/pipeline-cards--save-publish.png)
+![La carte Save / Publish du panneau DevOps Pipeline](../../_assets/annotated/vscode/pipeline-cards-level1--save-publish.png)
 
 La première question est celle qui piège tout le monde.
 
@@ -202,7 +218,7 @@ quatre doivent toutes y être : le champ `Installation__c.Panels_Required__c`, l
 `Installation__c-Installation Layout`, et les permission sets `Helios_Delivery_Crew` et
 `Helios_Delivery_Manager`.
 
-**Cette liste est votre story, telle que le pipeline la voit.** Si un composant que vous attendiez
+**Cette liste est votre story, telle que la pipeline la voit.** Si un composant que vous attendiez
 manque ici, git ne sait pas que vous l'avez modifié, et il manquera aussi en intégration : le
 déploiement échouera, ou pire, réussira en ne faisant que la moitié de ce que vous vouliez. La lire
 avant chaque push est la seule habitude qui sépare un contributeur qui a des ennuis de déploiement
@@ -254,7 +270,7 @@ même format. Le compteur du bouton de rapport compte les entrées et non les bl
 afficher une de plus que prévu quand une modification entraîne son objet parent avec elle.
 
 `manifest/package.xml` a la même forme, avec tous les composants de l'application. Un projet peut
-demander au pipeline de ne déployer que le delta à la place, avec `useDeltaDeployment`, et celui-ci
+demander à la pipeline de ne déployer que le delta à la place, avec `useDeltaDeployment`, et celui-ci
 ne le fait pas : un déploiement complet est plus lent et n'oublie jamais rien, ce qui est le bon
 compromis pour une formation.
 
@@ -262,9 +278,14 @@ compromis pour une formation.
 
 ### 7. Lire ce que la commande a fait à vos fichiers
 
-Remontez dans le panneau de la commande. Entre vos réponses, elle a affiché quelques lignes à propos
-du nettoyage : des références à des composants supprimés, et les positions en pixels à l'intérieur
-des Flows. C'est le nettoyage automatique du projet, et il tourne à chaque publication, sur le
+Revenez à l'onglet de la commande. Save / Publish tourne dans son propre onglet, nommé
+**hardis:work:save** **(1)**, et il est toujours ouvert à côté du visualiseur de package, en attente
+de votre réponse.
+
+![L'onglet de la commande Save / Publish, avec les deux lignes de nettoyage au-dessus de la question](../../_assets/annotated/vscode/work-save-package-xml--cleaning.png)
+
+Entre vos réponses, elle a affiché deux lignes à propos du nettoyage **(2)** : des références à des
+composants supprimés, et les positions en pixels à l'intérieur des Flows. C'est le nettoyage automatique du projet, et il tourne à chaque publication, sur le
 travail de tout le monde, pour que personne n'ait à se souvenir des règles de la maison.
 
 Sur cette story il n'a presque rien à faire, parce que vous avez modifié un champ, une présentation
@@ -304,11 +325,14 @@ qui a effectué, dans cet ordre :
 4. **Commité ce qu'il a modifié**, sous `chore(sfdx-hardis): update package content` et
    `chore(sfdx-hardis): clean sfdx project`. Ces commits sont ceux de l'outil, pas les vôtres : le
    vôtre est celui que vous avez écrit à l'étape 4
-5. **Poussé** la branche sur votre fork (votre copie personnelle du repository du cours sur GitHub, par
-   exemple `github.com/my-username/sfdx-hardis-training`)
+5. **Poussé** la branche sur votre fork
 
 Chacune de ces étapes est de la configuration, pas de la magie. Tout ce qu'il a fait est dans
 `config/.sfdx-hardis.yml`, et un projet qui veut un autre comportement change ce fichier.
+
+<!-- command-links:start -->
+Documentation de la commande : [hardis:work:save](https://sfdx-hardis.cloudity.com/hardis/work/save/)
+<!-- command-links:end -->
 
 </details>
 
@@ -326,8 +350,8 @@ Répondez **Yes** et la branche part sur votre fork
 - `manifest/package.xml` gagnant une ligne, le nouveau champ, dans un commit fait par l'outil
 - Votre branche sur GitHub, dans votre fork (`github.com/my-username/sfdx-hardis-training`), sous
   **Branches**
-- Le panneau DevOps Pipeline montrant votre branche qui alimente `integration`, sans Pull Request
-  pour l'instant
+- Le panneau DevOps Pipeline toujours sans votre branche : il dessine une branche dès qu'elle a une
+  Pull Request, et la vôtre en reçoit une au [Lab 1.6](1-6-pull-request-deployment-check-and-merge.md)
 
 ## En cas de problème
 
@@ -358,14 +382,14 @@ plus. Lisez les règles de nettoyage dans le bloc Sous le capot ci-dessus. Rien 
 org : le nettoyage change ce qui est commité, jamais ce qui est dans Salesforce.
 
 **Le push est rejeté.**
-Votre fork (`github.com/my-username/sfdx-hardis-training`) a bougé, en général parce que vous avez
+Votre fork a bougé, en général parce que vous avez
 réinitialisé un niveau. Tirez d'abord : panneau Source Control, menu **...**, **Pull**.
 
 ## Vérifiez votre travail
 
-Welcome page > **Training: Level 1** > **Check my work**, puis choisissez le Lab 1.5.
+Welcome page > **Training: Level 1** > **Check my work**, puis choisissez le **Lab 1.5**.
 
-Il lit la copie de votre branche dans votre fork (`github.com/my-username/sfdx-hardis-training`),
+Il lit la copie de votre branche dans votre fork,
 celle que Save / Publish a poussée : le champ, le permission set qui l'accorde, et la présentation de
 page qui le porte. Un commit resté sur votre machine ne compte pas, parce que personne d'autre ne
 peut le voir.
