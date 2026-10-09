@@ -5,8 +5,11 @@ description: "Modifiez un flow Salesforce existant, puis lisez correctement un c
 level: 2
 lab: 2
 lang: fr
-source_rev: "4661bc03d2558cec0b10dc8f320de2e8a4617d66"
+source_rev: "d0a3a04d32929b6ab52a1f9590ff383010fc3ea1"
 screenshots:
+  - annotated/vscode/package-xml-filtered
+  - annotated/vscode/editor-field-file
+  - annotated/vscode/pipeline-packages-menu--package-xml
   - annotated/web/github-pr-check-failed
   - annotated/web/github-pr-flow-diff
   - annotated/salesforce/flow-builder-crew-warning
@@ -77,6 +80,13 @@ D'abord le champ dont le flow a besoin pour ne pas avertir deux fois. Dans `heli
 | Field Name    | `Crew_Warning_Sent__c` |
 | Default Value | Décoché                |
 
+Sur l'écran de sécurité au niveau du champ, cochez **Visible** pour **System Administrator**
+seulement (*Administrateur système* dans une org en français), et sur le dernier écran décochez **Installation Layout** : personne d'autre que le flow n'a
+besoin de cette case, elle ne va donc sur aucune page. Cette seule coche est pour vous, pas pour le
+flow : Flow Builder ne propose que les champs que la personne qui édite le flow peut lire, et sans
+elle **Crew Warning Sent** manque dans la liste de l'étape 2. Le flow lui-même tourne en mode système
+et n'a besoin d'aucun droit.
+
 Puis le flow. **Setup > Flows**, ouvrez **Installation Crew Warning**. Il est actif, Flow Builder
 ouvre donc la version qui tourne : chaque modification que vous faites est enregistrée comme une
 **nouvelle version**, et l'ancienne continue de tourner jusqu'à ce que vous activiez la vôtre.
@@ -87,7 +97,9 @@ Trois modifications, et l'image ci-dessus montre où chacune commence :
 
 1. Élément **Start** : cliquez sur **Edit** **(1)** dessus. Sous **Set Entry Conditions**, le flow
    tourne déjà quand `Crew Size` n'est pas nul **(1)**. Cliquez sur **Add Condition** **(2)** et
-   ajoutez la seconde, `Panels Required`, **Is Null**, `False`, puis **Done** en bas du panneau
+   ajoutez la seconde, `Panels Required`, **Is Null**, `False`. Ce panneau n'a pas de bouton
+   **Done** : la condition est gardée au fil de la saisie, et le **X** **(3)** en haut à droite
+   ferme le panneau
 
     ![Les conditions d'entrée de l'élément Start](../../_assets/annotated/salesforce/flow-builder-start-conditions.png)
 
@@ -116,24 +128,27 @@ Trois modifications, et l'image ci-dessus montre où chacune commence :
 
     ![Le menu Add Element, avec Update Triggering Record](../../_assets/annotated/salesforce/flow-builder-add-element.png)
 
-**Save As New Version** **(4)**, puis **Activate**, le bouton qui remplace **Deactivate** sur la
+**Save As New Version** **(4)**. La fenêtre qui s'ouvre contient la description du flow : remplacez-la
+par `Warns the planner when the crew assigned to an installation is too small for the panels it
+needs.`, puisque le flow ne prévient plus à chaque enregistrement. Puis **Activate**, le bouton qui remplace **Deactivate** sur la
 nouvelle version.
 
-!!! info "Pourquoi le flow a un chemin de fault"
+!!! info "Pourquoi le flow a un fault path"
     Un élément d'enregistrement qui n'en a pas échoue en silence : le flow s'arrête, l'utilisateur ne
     voit rien, et la Task censée avertir le planificateur n'apparaît jamais. Sur un vrai projet, le
-    chemin de fault envoie le message quelque part où quelqu'un le lit. Ici il se contente de le
-    garder, parce que ce que le pipeline contrôle est qu'un chemin de fault existe. Le flow d'origine
+    fault path envoie le message quelque part où quelqu'un le lit. Ici il se contente de le
+    garder, parce que ce que la pipeline contrôle est qu'un fault path existe. Le flow d'origine
     en avait déjà un, et votre nouvel élément le suit.
 
 Testez : ouvrez une installation, mettez `Panels Required` à 40 et `Crew Size` à 2, enregistrez. Une
 tâche apparaît dans son **Activity**. Enregistrez à nouveau : pas de deuxième tâche. C'est la story
 qui fonctionne, dans votre org. La case à cocher elle-même reste invisible : aucun permission set ne
-l'accorde, parce que personne d'autre que le flow n'en a besoin.
+l'accorde, parce que personne d'autre que le flow n'en a besoin, et la seule personne qui peut la lire
+est l'administrateur qui a construit le flow.
 
 ### 3. Publier le flow, et regarder le contrôle échouer
 
-Faites-le descendre comme le Niveau 1 vous l'a appris : **DevOps Pipeline > Commit changes**,
+Faites-en un retrieve comme le Niveau 1 vous l'a appris : **DevOps Pipeline > Commit changes**,
 **Recent Changes**, **Search Metadata**. La story porte sur le flow, cochez donc le flow
 `Installation_Crew_Warning`, récupérez-le, et commitez-le depuis **Source Control**.
 
@@ -180,9 +195,16 @@ minutes et le flow que vous venez de tester le lit.
 Quand un déploiement dit que quelque chose n'existe pas, la première question n'est jamais "est-ce
 dans l'org". C'est **"est-ce dans le package"**.
 
-Ouvrez le package : panneau **DevOps Pipeline**, menu **Deployment packages**, **Package XML**, comme
-au [Lab 1.5](../level-1-contributor-basics/1-5-retrieve-commit-and-publish-your-changes.md). Tapez `Crew_Warning` dans sa zone de filtre. La ligne **Flow** liste votre flow.
-**CustomField** ne liste pas `Installation__c.Crew_Warning_Sent__c`.
+Ouvrez le package : dans le panneau **DevOps Pipeline**, le menu **Deployment packages** **(1)**,
+puis **Package XML** **(2)**, comme au [Lab 1.5](../level-1-contributor-basics/1-5-retrieve-commit-and-publish-your-changes.md).
+
+![Le menu Deployment packages du panneau DevOps Pipeline, avec Package XML](../../_assets/annotated/vscode/pipeline-packages-menu--package-xml.png)
+
+Tapez `Crew_Warning` dans sa zone de filtre **(1)**. Il reste une ligne, **Flow** **(2)** : le
+package porte votre flow. Il n'y a aucune ligne **CustomField** : le package ne porte pas
+`Installation__c.Crew_Warning_Sent__c`.
+
+![Le visualiseur de package filtré sur Crew_Warning, avec la seule ligne Flow](../../_assets/annotated/vscode/package-xml-filtered.png)
 
 On envoie à l'org d'intégration un flow qui lit un champ que le package ne porte pas, et l'org
 d'intégration n'a pas ce champ non plus. Du point de vue de Salesforce, l'erreur est exactement
@@ -191,7 +213,7 @@ juste.
 Le package est construit à partir de ce que vos commits ont changé, et le champ n'a jamais été
 commité : regardez là où vivent les champs,
 `force-app/main/default/objects/Installation__c/fields/`, il n'y est pas. Il n'existe qu'à un seul
-endroit, `helios-dev`, et un pipeline ne lit jamais l'org d'un développeur.
+endroit, `helios-dev`, et une pipeline ne lit jamais l'org d'un développeur.
 
 ### 5. Récupérer ce dont le flow dépend
 
@@ -203,7 +225,10 @@ Ouvrez le panneau **Metadata Retriever** :
 
 ![Le panneau Metadata Retriever, avec son sélecteur d'org, ses filtres et le bouton Search Metadata](../../_assets/annotated/vscode/metadata-retriever.png)
 
-Le champ apparaît sous `force-app/main/default/objects/Installation__c/fields/`.
+Le champ apparaît sous `force-app/main/default/objects/Installation__c/fields/` **(1)**, dans la
+vue **Explorer** de VS Code.
+
+![Le fichier du champ rapatrié dans l'Explorer, ouvert dans l'éditeur](../../_assets/annotated/vscode/editor-field-file.png)
 
 L'habitude à retenir : quand vous modifiez quelque chose qui **lit** un autre composant, récupérez
 aussi ce composant. Un flow lit des champs, une présentation de page les affiche, un permission set
@@ -239,6 +264,10 @@ plupart des gens passent vingt minutes sur la question 2 d'abord.
 enregistré le vôtre en version 2, et le déploiement envoie sa définition. L'org d'intégration garde
 sa version 1 en historique, inactive, exactement comme `helios-dev` le fait.
 
+<!-- command-links:start -->
+Documentation de la commande : [hardis:project:deploy:smart](https://sfdx-hardis.cloudity.com/hardis/project/deploy/smart/)
+<!-- command-links:end -->
+
 </details>
 
 ## Ce que vous devez voir
@@ -249,6 +278,14 @@ sa version 1 en historique, inactive, exactement comme `helios-dev` le fait.
 - Après le merge, le flow présent et actif dans `helios-integration`
 
 ## En cas de problème
+
+**Flow Builder ne propose pas Crew Warning Sent.**
+Vous avez créé le champ avec **Visible** décoché pour tous les profils : vous ne pouvez pas le lire, et
+Flow Builder ne liste que les champs que vous pouvez lire. **Setup > Object Manager > Installation >
+Fields & Relationships > Crew Warning Sent > Set Field-Level Security**, cochez **Visible** pour
+**System Administrator** (*Administrateur système* dans une org en français), **Save**. Rechargez ensuite Flow Builder :
+le champ apparaît dans la liste de **Update Triggering Record**, et la formule `crewTooSmall`
+l'accepte.
 
 **La récupération ne ramène rien.**
 Le sélecteur d'org du Metadata Retriever pointe vers une autre org. Il doit indiquer `helios-dev`, là
@@ -265,7 +302,7 @@ avez choisi un propre à votre org. Simplifiez : le sujet et le WhatId suffisent
 
 ## Vérifiez votre travail
 
-Welcome page > **Training: Level 2** > **Check my work**, puis choisissez le Lab 2.2.
+Welcome page > **Training: Level 2** > **Check my work**, puis choisissez le **Lab 2.2**.
 
 ## Pour aller plus loin
 

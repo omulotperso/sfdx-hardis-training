@@ -1,15 +1,15 @@
 ---
 title: "Niveau 3 - Release manager Salesforce DevOps"
-description: "Tenez un pipeline CI/CD Salesforce avec sfdx-hardis : environnements, authentification JWT, promotions, notes de version, hotfixes, monitoring et métriques DORA."
+description: "Tenez une pipeline CI/CD Salesforce avec sfdx-hardis : environnements, authentification JWT, promotions, notes de version, hotfixes, monitoring et métriques DORA."
 id: l3-home
 level: 3
 lang: fr
-source_rev: "4661bc03d2558cec0b10dc8f320de2e8a4617d66"
+source_rev: "1651e48fae090ca8a17bcdbaee369e4501394d2a"
 ---
 
 # Niveau 3 - Release manager Salesforce DevOps
 
-**Durée** : environ 6 h.
+**Durée** : environ 6 h 55.
 
 **Prérequis** : le [Niveau 1](../level-1-contributor-basics/index.md) **et** le
 [Niveau 2](../level-2-contributor-advanced/index.md). Les deux sont obligatoires, et l'audit du
@@ -27,13 +27,13 @@ approuver des Pull Requests et les comprendre.
 
 ## L'histoire
 
-Victor Squeeker est parti. Il était le release manager, il a monté le pipeline il y a deux ans, et il
+Victor Squeeker est parti. Il était le release manager, il a monté la pipeline il y a deux ans, et il
 ne l'a jamais fini.
 
 Ce dont vous héritez fonctionne, au sens où les contributeurs livrent dans `integration` tous les
 jours et où le métier teste dans `uat`. Ce qu'il n'a pas :
 
-- **Ni preprod ni production dans le pipeline.** Les branches existent. Rien n'y déploie
+- **Ni preprod ni production dans la pipeline.** Les branches existent. Rien n'y déploie
 - **Pas d'authentification de CI correcte.** Il y a deux secrets de refresh token que quelqu'un a
   ajoutés à la hâte
 - **Pas de monitoring.** Personne n'apprend qu'il y a un problème en production avant qu'un
@@ -43,7 +43,7 @@ jours et où le métier teste dans `uat`. Ce qu'il n'a pas :
 - **Pas de documentation générée.** L'org a deux ans et la seule description qui en existe,
   c'était Victor
 
-Votre première semaine consiste à finir le pipeline. Ensuite, vous le faites tourner.
+Votre première semaine consiste à finir la pipeline. Ensuite, vous la faites tourner.
 
 ## Le menu Training
 
@@ -53,19 +53,20 @@ seul menu. Ouvrez la **Welcome page**, et sous **CUSTOM MENUS** cliquez sur la c
 
 ![Le menu de formation du niveau 3, ouvert sur la Welcome page](../../_assets/annotated/vscode/welcome-custom-menu-3.png)
 
-Elles sont neuf, et les labs les appellent par ces noms :
+Elles sont dix, et les labs les appellent par ces noms :
 
-| Commande                              | Ce qu'elle fait                                                                        |
-|---------------------------------------|----------------------------------------------------------------------------------------|
-| **Set up my training environment**    | Reconstruit une scratch org qui a expiré, et pointe le pipeline dessus                 |
-| **Where am I?**                       | Dit à quel niveau et à quel lab vous en êtes, et ce qu'il faut faire ensuite           |
-| **Set up one of my training orgs**    | Déploie l'application Helios et ses données dans une org que vous choisissez           |
-| **Simulate my teammates**             | Crée les branches et Pull Requests de collègues dont un lab a besoin                   |
-| **Publish my pipeline configuration** | Ouvre une Pull Request vers `integration` avec la configuration que vous avez modifiée |
-| **Check my work**                     | Vérifie le lab que vous venez de terminer et affiche votre reçu                        |
-| **Claim my badge**                    | Contrôle le niveau entier, puis ouvre votre demande de badge déjà remplie              |
-| **Reset this level**                  | Remet votre repository au début du Niveau 3                                            |
-| **Clean up a training org**           | Retire l'application Helios et ses données d'une org                                   |
+| Commande                              | Ce qu'elle fait                                                                                                                                          |
+|---------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Set up my training environment**    | Reconstruit une scratch org qui a expiré, et pointe la pipeline dessus                                                                                   |
+| **Where am I?**                       | Dit à quel niveau et à quel lab vous en êtes, et ce qu'il faut faire ensuite                                                                             |
+| **Set up one of my training orgs**    | Déploie l'application Helios et ses données dans une org que vous choisissez                                                                             |
+| **Simulate my teammates**             | Crée les branches et Pull Requests de collègues dont un lab a besoin                                                                                     |
+| **Publish my pipeline configuration** | Ouvre une Pull Request vers `integration` avec la configuration que vous avez modifiée                                                                   |
+| **Check my work**                     | Vérifie le lab que vous venez de terminer                                                                                                                |
+| **Claim my badge**                    | Contrôle le niveau entier, puis ouvre votre demande de badge déjà remplie                                                                                |
+| **Update my course**                  | Apporte les changements reçus par le cours depuis votre fork, par une Pull Request vers `integration`                                                    |
+| **Reset this level**                  | Recommence le Niveau 3 : `integration`, et si vous le voulez les branches des labs et les orgs ([Recommencer le cours](../help.md#recommencer-le-cours)) |
+| **Clean up a training org**           | Retire l'application Helios et ses données d'une org                                                                                                     |
 
 Il y a un menu par niveau, et chacun ne contient que ce dont ce niveau a besoin : rien de ce que vous
 avez sous les yeux ne concerne un lab que vous n'avez pas encore atteint.
@@ -75,18 +76,19 @@ Les mêmes commandes sont dans la vue **SFDX HARDIS** de la barre de gauche, sou
 
 ## Ce que vous allez faire
 
-| Lab                                                       | Titre                                                        | Durée  |
-|-----------------------------------------------------------|--------------------------------------------------------------|--------|
-| [3.1](3-1-configure-the-pipeline-up-to-production.md)     | Configurer le pipeline CI/CD jusqu'à la production           | 75 min |
-| [3.2](3-2-review-a-contributor-pull-request.md)           | Relire et merger la Pull Request d'un contributeur           | 25 min |
-| [3.3](3-3-deploy-to-integration-and-read-the-log.md)      | Lire le log de déploiement, et ce que .forceignore lui cache | 25 min |
-| [3.4](3-4-merge-colliding-pull-requests.md)               | Trois Pull Requests se percutent : choisir l'ordre de merge  | 35 min |
-| [3.5](3-5-promote-to-uat-and-write-release-notes.md)      | Promouvoir en UAT et écrire les notes de version             | 35 min |
-| [3.6](3-6-release-to-production-and-read-dora-metrics.md) | Livrer en production et lire vos métriques DORA              | 35 min |
-| [3.7](3-7-hotfix-and-retrofit.md)                         | La production est cassée : hotfix et retrofit                | 35 min |
-| [3.8](3-8-monitor-your-production-org.md)                 | Monitorer votre org de production                            | 35 min |
-| [3.9](3-9-generate-the-project-documentation.md)          | Générer la documentation du projet Salesforce                | 20 min |
-| [3.10](3-10-capstone-run-a-weekly-release-cycle.md)       | Épreuve finale : mener un cycle de release hebdomadaire      | 45 min |
+| Lab                                                       | Titre                                                          | Durée  |
+|-----------------------------------------------------------|----------------------------------------------------------------|--------|
+| [3.1](3-1-configure-the-pipeline-up-to-production.md)     | Configurer la pipeline CI/CD jusqu'à la production             | 50 min |
+| [3.2](3-2-review-a-contributor-pull-request.md)           | Relire et merger la Pull Request d'un contributeur             | 25 min |
+| [3.3](3-3-deploy-to-integration-and-read-the-log.md)      | Lire le log de déploiement, et ce que .forceignore lui cache   | 45 min |
+| [3.4](3-4-merge-colliding-pull-requests.md)               | Trois Pull Requests se percutent : choisir l'ordre de merge    | 35 min |
+| [3.5](3-5-promote-to-uat-and-write-release-notes.md)      | Promouvoir en UAT et écrire les notes de version               | 35 min |
+| [3.6](3-6-release-to-production-and-read-dora-metrics.md) | Livrer en production et lire vos métriques DORA                | 35 min |
+| [3.7](3-7-hotfix-and-retrofit.md)                         | La production est cassée : hotfix et retrofit                  | 35 min |
+| [3.8](3-8-monitor-your-production-org.md)                 | Monitorer votre org de production                              | 35 min |
+| [3.9](3-9-generate-the-project-documentation.md)          | Générer la documentation du projet Salesforce                  | 20 min |
+| [3.10](3-10-promote-a-subset-with-promotion-branches.md)  | Promouvoir un sous-ensemble avec les promotion branches (Beta) | 55 min |
+| [3.11](3-11-capstone-run-a-weekly-release-cycle.md)       | Épreuve finale : mener un cycle de release hebdomadaire        | 45 min |
 
 ## Une org de plus
 
@@ -111,7 +113,7 @@ environment** la reconstruit d'abord.
 
 Aux niveaux 1 et 2, vous construisiez des User Stories et ouvriez leurs Pull Requests. Un release
 manager ne le fait pas. Vos collègues ouvrent les Pull Requests, **Simulate my teammates** les joue,
-et vous les relisez, les mergez ou les renvoyez. Ce que vous créez vous-même, c'est le pipeline : sa
+et vous les relisez, les mergez ou les renvoyez. Ce que vous créez vous-même, c'est la pipeline : sa
 configuration, que **Publish my pipeline configuration** envoie vers `integration` par une Pull
 Request, et les promotions d'une branche majeure à la suivante, `integration` vers `uat`, `uat` vers
 `preprod`, `preprod` vers `main`.

@@ -5,9 +5,9 @@ description: "Prenez votre premier ticket du backlog et créez sa branche Git et
 level: 1
 lab: 3
 lang: fr
-source_rev: "4661bc03d2558cec0b10dc8f320de2e8a4617d66"
+source_rev: "b7f5e0686a2d5a83a1ce183f8f4c30a684e0a129"
 screenshots:
-  - annotated/vscode/pipeline-cards--new-user-story
+  - annotated/vscode/pipeline-cards-level1--new-user-story
   - annotated/vscode/work-new-story-type
   - annotated/vscode/work-new-story-name
   - annotated/vscode/work-new-org-type
@@ -71,7 +71,7 @@ point d'apprendre et de répéter pendant tout le reste de votre carrière sur c
 Sur la Welcome page, ouvrez le panneau **DevOps Pipeline** et faites défiler au-delà du diagramme
 jusqu'au **Project Contribution Workflow** **(1)**. Cliquez sur la carte **New User Story** **(2)**.
 
-![Les cartes de contribution du panneau DevOps Pipeline](../../_assets/annotated/vscode/pipeline-cards--new-user-story.png)
+![Les cartes de contribution du panneau DevOps Pipeline](../../_assets/annotated/vscode/pipeline-cards-level1--new-user-story.png)
 
 !!! tip "Vous ne voyez pas les cartes ?"
     Elles sont sous le diagramme des branches. Faites défiler vers le bas dans le panneau.
@@ -104,7 +104,7 @@ is broken** **(3)** sert à corriger quelque chose de déjà livré. Les deux r�
 ce projet, dans `branchPrefixChoices`.
 
 La troisième réponse, **Retrofit**, est celle du release manager. Elle fait redescendre un hotfix de
-production dans le pipeline, et le [Lab 3.7](../level-3-release-manager/3-7-hotfix-and-retrofit.md)
+production dans la pipeline, et le [Lab 3.7](../level-3-release-manager/3-7-hotfix-and-retrofit.md)
 est l'endroit où elle sert. Ici, n'y touchez pas.
 
 La réponse devient la première partie du nom de votre branche, `features/` ou `fix/`, pour que
@@ -211,6 +211,10 @@ Le préfixe de branche `features/` et le motif de nom viennent de `config/.sfdx-
 Changez ces deux réglages et chaque contributeur reçoit des questions différentes. C'est ainsi qu'un
 projet impose une convention sans que personne ait à s'en souvenir.
 
+<!-- command-links:start -->
+Documentation de la commande : [hardis:work:new](https://sfdx-hardis.cloudity.com/hardis/work/new/)
+<!-- command-links:end -->
+
 </details>
 
 ## Ce que vous devez voir
@@ -219,11 +223,17 @@ Trois choses, toutes visibles sans quitter VS Code :
 
 1. **En bas à gauche de la barre d'état** : la branche est maintenant
    `features/US-014-panels-required`
-2. **Le panneau sfdx-hardis, section Status** : *Current Org* est votre org `helios-dev`
-3. **Le panneau DevOps Pipeline** : votre nouvelle branche apparaît comme une petite boîte qui
-   alimente `integration`
+2. **Le panneau sfdx-hardis, section Status** : *Current Org* nomme la scratch org que vous avez
+   choisie. Il affiche le nom propre de l'org, celui que Salesforce a inventé, et non l'alias
+   `helios-dev` : vérifiez donc le nom d'utilisateur plutôt que de chercher l'alias que vous
+   connaissez
+3. **Le panneau DevOps Pipeline** : `integration` et `uat`, inchangés. **Votre nouvelle branche
+   n'y est pas, et c'est normal.** Le diagramme dessine les branches majeures et les Pull Requests
+   ouvertes vers elles, et votre branche n'a encore ni Pull Request ni org à elle. Elle apparaîtra
+   au [Lab 1.6](1-6-pull-request-deployment-check-and-merge.md), au moment où vous ouvrirez la
+   Pull Request
 
-Si l'une des trois contredit les autres, arrêtez-vous et corrigez-le maintenant plutôt qu'après avoir
+Si les deux premières se contredisent, arrêtez-vous et corrigez-le maintenant plutôt qu'après avoir
 construit quelque chose.
 
 ## En cas de problème
@@ -231,6 +241,19 @@ construit quelque chose.
 **La commande refuse le nom.**
 Le motif qu'utilise ce projet est `US-014-panels-required` : trois chiffres, puis des mots en
 minuscules séparés par des tirets. `US14-PanelsRequired` est rejeté exprès.
+
+**Elle dit que la branche existe déjà et demande un autre nom.**
+Une nouvelle User Story ne réutilise jamais une branche : une ancienne branche emporterait ses propres
+commits dans votre Pull Request. La sortie dépend de l'origine de cette branche :
+
+- **Vous travaillez en ce moment sur US-014**, et la commande s'est arrêtée en route ou vous avez
+  cliqué deux fois sur **New User Story**. Vous n'avez pas besoin d'une deuxième branche : cliquez
+  sur **Cancel**, puis sur le nom de la branche en bas à gauche de la barre d'état, et choisissez
+  `features/US-014-panels-required` dans la liste. Si vous aviez des changements non commités, la
+  commande les a mis de côté avant de demander : l'entrée suivante les récupère
+- **Elle reste d'une tentative abandonnée**, après un **Reset this level** qui l'a gardée. N'y
+  retournez pas : elle part d'un ancien `integration`. Tapez plutôt un nouveau nom,
+  `US-014-panels-required-2`, et continuez à partir de là
 
 **Un fichier que vous éditiez a disparu.**
 Vous avez modifié quelque chose avant de démarrer, et `hardis:work:new` n'emporte jamais du travail
@@ -249,11 +272,17 @@ Story et prenez **Reuse scratch org helios-dev**.
 
 ## Vérifiez votre travail
 
-Welcome page > **Training: Level 1** > **Check my work**, puis choisissez le Lab 1.3.
+Welcome page > **Training: Level 1** > **Check my work**, puis choisissez le **Lab 1.3**.
 
 Il cherche votre branche de story, `features/US-014-...`, la seule chose que ce lab laisse derrière
 lui. Votre travail n'a pas encore atteint `integration`, et rien ici ne s'y attend : c'est le
 [Lab 1.6](1-6-pull-request-deployment-check-and-merge.md).
+
+!!! tip "Dans Agentforce Vibes, si le panneau dit que le contenu est bloqué"
+    Un IDE dans le navigateur perd parfois le cadre dans lequel tourne un panneau, et affiche *the
+    content is blocked* à la place de la commande. Rien ne cloche dans votre travail : rechargez
+    l'onglet du navigateur et recliquez sur **Check my work**. Cela arrive à n'importe quel
+    panneau, pas seulement à celui-ci.
 
 ## Pour aller plus loin
 

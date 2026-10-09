@@ -5,7 +5,7 @@ description: "Décidez de l'ordre dans lequel trois Pull Requests sont mergées 
 level: 3
 lab: 4
 lang: fr
-source_rev: "4661bc03d2558cec0b10dc8f320de2e8a4617d66"
+source_rev: "a56a9431039c47aac2bd6723d7f35dca0eb38c67"
 screenshots:
   - annotated/vscode/welcome-custom-menu-3
   - annotated/vscode/pipeline-config--cleaning-overwrite
@@ -188,8 +188,10 @@ permissions sur les profils.
 **Le gestionnaire d'écrasement** (`packageNoOverwritePath`) protège les composants délibérément
 différents d'une org à l'autre. Tout ce qui est listé dans `manifest/package-no-overwrite.xml` est
 retiré du package quand l'org cible le possède déjà, pour qu'un déploiement ne puisse pas aplatir un
-named credential qui pointe vers un endpoint différent dans chaque environnement. Le fichier n'existe
-pas encore dans ce projet, rien n'est donc protégé : le [Lab 3.5](3-5-promote-to-uat-and-write-release-notes.md) le crée, avant la première promotion
+named credential qui pointe vers un endpoint différent dans chaque environnement. Le projet démarre
+avec la liste que reçoit tout projet sfdx-hardis. Elle couvre rapports, tableaux de bord, connected
+apps et credentials, Helios ne déploie rien de tout cela, donc rien de ce qu'il déploie n'est encore
+protégé : le [Lab 3.5](3-5-promote-to-uat-and-write-release-notes.md) y ajoute la première entrée qui compte, avant la première promotion
 vers `uat`. Son emplacement peut être changé par branche, c'est pourquoi vous ne le trouverez pas
 dans l'onglet **Deployment** **(2)** global : basculez la portée sur `Branch: integration` et il y
 est, sous **Branch-scoped custom Package-No-Overwrite path**.
@@ -246,7 +248,7 @@ dans la même branche est la façon dont un release manager perd une soirée.
 
 ## Vérifiez votre travail
 
-Welcome page > **Training: Level 3** > **Check my work**, puis choisissez le Lab 3.4.
+Welcome page > **Training: Level 3** > **Check my work**, puis choisissez le **Lab 3.4**.
 
 ## Pour aller plus loin
 

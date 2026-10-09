@@ -17,9 +17,9 @@ screenshots:
 depends_on:
   commands: [hardis:doc:release-notes, hardis:project:deploy:smart]
   flags: []
-  config: [mergeTargets, availableTargetBranches, packageNoOverwritePath]
+  config: [mergeTargets, availableTargetBranches, packageNoOverwritePath, failValidationOnPendingManualActions]
   panels: [pipeline, deploymentAction]
-  docs: [salesforce-devops-deploy-major-branches, hardis/doc/salesforce-devops-release-notes]
+  docs: [salesforce-devops-deploy-major-branches, hardis/doc/salesforce-devops-release-notes, salesforce-devops-config-overwrite]
 ---
 
 # Lab 3.5 - Promote to UAT and write the release notes
@@ -45,7 +45,7 @@ deploys to has real testers in it.
 
 - [ ] [Lab 3.4](3-4-merge-colliding-pull-requests.md) finished: US-018 and US-019 merged into `integration`
 - [ ] `helios-uat` connected: the scratch org Level 1 created, configured as the `uat` org since then
-- [ ] JWT authentication working for `uat` ([Lab 3.1](3-1-configure-the-pipeline-up-to-production.md))
+- [ ] `SFDX_AUTH_URL_UAT` still in your fork: `uat` keeps logging in with it, as [Lab 3.1](3-1-configure-the-pipeline-up-to-production.md) explains
 
 ## Steps
 
@@ -99,12 +99,15 @@ production address back in UAT without a word. The **overwrite manager** is for 
 anything listed in `manifest/package-no-overwrite.xml` is taken out of the deployment when the target
 org already has it, and created when it does not.
 
-The file does not exist yet, and you do not have to write it. In the **DevOps Pipeline** panel, open
-the **Deployment packages** menu, the one that opened **Package XML** in [Lab 1.5](../level-1-contributor-basics/1-5-retrieve-commit-and-publish-your-changes.md), and pick **No
-Overwrite**. The package viewer opens on an empty list. Turn **Edit mode** on **(1)**, then click
+Helios already has that file: it is the list every sfdx-hardis project starts with. It protects the
+components an org keeps for itself almost everywhere, reports and dashboards maintained in
+production, connected apps, named credentials, certificates. Remote site settings are not in it yet,
+and you do not have to write XML to add them. In the **DevOps Pipeline** panel, open the
+**Deployment packages** menu, the one that opened **Package XML** in [Lab 1.5](../level-1-contributor-basics/1-5-retrieve-commit-and-publish-your-changes.md), and pick **No
+Overwrite**. The package viewer opens on that list. Turn **Edit mode** on **(1)**, then click
 **Add Type** **(2)**.
 
-![The package viewer on the empty no-overwrite list, in edit mode](../../_assets/annotated/vscode/package-no-overwrite-edit--add-type.png)
+![The package viewer on the default no-overwrite list, in edit mode](../../_assets/annotated/vscode/package-no-overwrite-edit--add-type.png)
 
 Type `RemoteSiteSetting`, the name Salesforce gives this kind of component, in **Metadata Type API
 Name** **(1)**, and click **Add** **(2)**.
@@ -112,9 +115,9 @@ Name** **(1)**, and click **Add** **(2)**.
 ![The Add Metadata Type window of the package viewer](../../_assets/annotated/vscode/package-no-overwrite-add-type--type.png)
 
 The new **RemoteSiteSetting** row has an **Add member** button: click it, type `Helios_Warehouse`,
-and **Add**. The viewer wrote `manifest/package-no-overwrite.xml` for you, with the shape of
-`manifest/package.xml`: one block per kind of component, its members listed by name. **Edit File**
-opens it as text, if you want to see it.
+and **Add**. The viewer added a `RemoteSiteSetting` block to `manifest/package-no-overwrite.xml`
+for you. The file has the shape of `manifest/package.xml`: one block per kind of component, its
+members listed by name, or `*` for all of them. **Edit File** opens it as text, if you want to see it.
 
 Then **Training: Level 3** > **Publish my pipeline configuration**, and merge its Pull Request once
 green, as in [Lab 3.1](3-1-configure-the-pipeline-up-to-production.md): the list of what must never be overwritten is pipeline configuration, like the
@@ -137,10 +140,15 @@ The chip is there because no Pull Request is open on that arrow. Once you create
 replaced by the Pull Request number and its status.
 
 !!! note "Not the promotion button of the branch window"
-    The branch window can also show a **Create promotion from integration (Beta)** button,
-    but only on a project that turns on `enablePromotionBranches`, which this one does not. That
-    feature is for promoting a **subset** of what is waiting. What you are doing is promoting
-    everything, and everything is what a plain Pull Request from one branch to the next carries.
+    A branch window can also show a **Create promotion from <branch> (Beta)** button and a checkbox
+    on every row. This project turns that feature on ([Lab 3.1](3-1-configure-the-pipeline-up-to-production.md)), but `allowedPromotionSteps` allows
+    one step only, `uat` to `preprod`, so the window of `integration` has neither. You will meet
+    both on the window of `uat` in step 7.
+
+    That feature carries a **subset** of what is waiting, and it exists for the week the business
+    signs off one story and not the one next to it. What you are doing here is promoting
+    everything, which is what a plain Pull Request from one branch to the next carries, and what
+    you should be doing almost every week. [Lab 3.10](3-10-promote-a-subset-with-promotion-branches.md) is the exception.
 
 Title it for the humans who will read it, not for git, and call it a **promotion**:
 
@@ -184,6 +192,11 @@ The checklist is the exception, and it is not decoration. **Tick a box once you 
 in the org**, and the next sfdx-hardis job reads the box back and records the action as done. Leave
 it unticked and the next promotion will still be asking you for it.
 
+A **before** step also holds the merge: while the deliverability step of US-026 is not marked as
+done in `uat`, the check of the promotion stops red, right after its pre-deployment actions. Do the
+click in `helios-uat`, tick its box (or **Mark as done in uat** in the VS Code **Deployment
+Actions** tab), then **Re-run all jobs** on the check: it records the step and goes green.
+
 ### 5. Merge and watch the deployment
 
 Merge the promotion. The **Process Deployment (sfdx-hardis)** run starts, this time on `uat`.
@@ -191,7 +204,9 @@ Merge the promotion. The **Process Deployment (sfdx-hardis)** run starts, this t
 This is the first deployment to this org through the pipeline, so it will be larger than the ones to
 integration: UAT is behind by everything the team has done. Expect several minutes.
 
-When it finishes, do the manual steps the comment listed, in `helios-uat`.
+The deliverability step is a **pre-deploy** one: its place is before the merge, as step 4 says,
+and the check did not go green until you ticked it. This job skips it: *Skipping Set Email
+Deliverability to All Email ...: already run in uat*.
 
 Then read the log for the overwrite manager, above the deployment, among the lines that start
 with `[NoOverwrite]`:
@@ -203,12 +218,21 @@ Type RemoteSiteSetting: 1 item(s) skipped because they already exist in the targ
 `helios-uat` already has `Helios_Warehouse`, so the promotion left it out of the package, and the
 **Final package.xml to deploy** printed right after it has one item fewer.
 
+The Pull Request says it too, without the log: the comment of the check, and the one this
+deployment writes, carry a **Protected metadata (package-no-overwrite.xml)** section. Open its
+table, **Protected components per metadata type**: it counts **1** in the **Not overwritten** column
+of the **RemoteSiteSetting** row. Read it on the
+check, before merging: a component you expected to deploy that shows up there is one the list
+protects by mistake.
+
 ### 6. Verify with a tester's eyes
 
 Open `helios-uat` and check the two stories are genuinely usable, not just deployed:
 
-- A crew larger than the cap is brought back down to the cap when you save: put `Crew Capacity Cap`
-  at 3 and `Crew Size` at 6 on a planned installation, save, and it reads 3
+- A crew larger than the cap is brought back down to the cap when you save. The rule runs when a
+  planned installation gets its crew, and UAT has none left planned since the crew size backfill of
+  [Lab 2.3](../level-2-contributor-advanced/2-3-fix-broken-records-with-an-apex-deployment-action.md), so make one: on any installation, set `Status` to `Planned`, `Crew Capacity Cap` to 3 and
+  `Crew Size` to 6, in the same edit, and save. It reads 3, and it has moved on to `Scheduled`
 - The quote PDF permission is on the manager permission set
 - **Setup > Remote Site Settings** still says `https://warehouse-test.helios.invalid` for
   `Helios_Warehouse`: the promotion left it alone
@@ -221,6 +245,10 @@ a piece of reference data.
 Open the **DevOps Pipeline** panel and click the `uat` node, the same way you clicked `integration`
 in step 1. In the footer of that window, the left button now reads **Generate Promotion Notes for
 uat**. Click it.
+
+This window has the checkboxes and the **Create promotion from uat (Beta)** button the note
+above mentioned, because `uat` is the source of the one promotion step this project allows. Ignore
+both until [Lab 3.10](3-10-promote-a-subset-with-promotion-branches.md).
 
 It asks one question, **Select the merge commit for this release or promotion**, listing the merges
 that landed on `uat`, newest first. Take the top one, **Merge pull request #N from
@@ -249,15 +277,23 @@ On this promotion, the generated notes open like this:
 
 | Metric           | Value |
 |------------------|-------|
-| Pull Requests    | 19    |
-| Tickets          | 15    |
+| Pull Requests    | 22    |
+| Tickets          | 17    |
 | Contributors     | 1     |
-| Added / Modified | 33    |
+| Added / Modified | 38    |
 ```
+
+There are more Pull Requests than tickets: the configuration Pull Request of step 2 and the
+promotion itself carry no story, and some stories took two Pull Requests, like US-062 and its fix in
+[Lab 3.3](3-3-deploy-to-integration-and-read-the-log.md). The configuration of [Lab 3.1](3-1-configure-the-pipeline-up-to-production.md) has a ticket of its own, US-050, because it went
+through its own story. Yours depends on how you got here: a little over 20 after walking
+Levels 1 and 2, far fewer after **Reset this level**, which starts Level 3 without their Pull
+Requests.
 
 Then come a table of the tickets, one of the Pull Requests with their authors and merge dates, the
 metadata changed by type, and the deployment actions with their status in `uat`: the manual
-deliverability step still **manual**, the imports and the schedule **success**.
+deliverability step **success**, ticked before the merge, the imports and the schedule
+**success**.
 
 Read it and then improve it. Generated notes are a complete list, and a release note the business
 reads needs two things the generator cannot know:
@@ -305,10 +341,14 @@ setup: `integration` into `uat` is a branch merged into another branch, and the 
 (`enableDeltaDeploymentBetweenMajorBranches`, off by default, because a promotion is the worst
 moment to discover the target org drifted).
 
-There is a Beta feature for teams who want to promote a **subset** of what is waiting,
-rather than everything: [promotion
-branches](https://sfdx-hardis.cloudity.com/salesforce-devops-promotion-branches/). It is worth
-reading about once you have done a few releases the ordinary way.
+There is a Beta feature for teams who have to promote a **subset** of what is waiting, rather than
+everything: [promotion
+branches](https://sfdx-hardis.cloudity.com/salesforce-devops-promotion-branches/). [Lab 3.10](3-10-promote-a-subset-with-promotion-branches.md) uses
+it, deliberately late, because it makes sense once you have done a few releases the ordinary way.
+
+<!-- command-links:start -->
+Command documentation: [hardis:doc:release-notes](https://sfdx-hardis.cloudity.com/hardis/doc/release-notes/)
+<!-- command-links:end -->
 
 </details>
 
@@ -322,9 +362,19 @@ reading about once you have done a few releases the ordinary way.
 
 ## If it goes wrong
 
+**The deployment job to uat is red on "Put the delivery managers in the Crew Leads group".**
+Your fork dates from before 2026-10-05, when Mariia's fix in [Lab 3.3](3-3-deploy-to-integration-and-read-the-log.md) did not ship the Crew Leads public group
+yet: `helios-uat` has none, and her first action looks for it. The metadata is deployed, so do not
+deploy again. Recover it the way [Lab 3.3](3-3-deploy-to-integration-and-read-the-log.md) taught: create the group in `helios-uat` (**Setup** >
+**Public Groups** > **New**, group name `Helios_Crew_Leads`), then in the **DevOps Pipeline** panel
+click `uat`, **Deployment Actions** tab, **Retry** on the failed action, and answer **Run all the
+next actions**. Create the same group in `helios-preprod` and `helios-prod` before their promotions
+in [Lab 3.6](3-6-release-to-production-and-read-dora-metrics.md).
+
 **The check fails with authentication errors for uat.**
-[Lab 3.1](3-1-configure-the-pipeline-up-to-production.md) for the `uat` branch: the secrets, and the pre-authorisation of the External Client App in
-`helios-uat`.
+`SFDX_AUTH_URL_UAT` is missing or out of date, often because `helios-uat` expired and was rebuilt.
+**Training: Level 3 > Set up my training environment** rebuilds what expired and writes the secret
+again. Then **Re-run all jobs** on the check.
 
 **The deployment fails on something that worked in integration.**
 The orgs differ. Usually UAT is missing a feature, a licence, or a component somebody deleted there
@@ -341,7 +391,7 @@ returned nothing and only warned; or the merges were squashed, so there is no li
 
 ## Check your work
 
-Welcome page > **Training: Level 3** > **Check my work**, then pick Lab 3.5.
+Welcome page > **Training: Level 3** > **Check my work**, then pick **Lab 3.5**.
 
 ## Go deeper
 

@@ -40,7 +40,7 @@ import os from "os";
 import path from "path";
 import {
   ROOT, c, title, info, ok, warn, abort, run, runAsync, runJson, parseJsonOutput, git, gitOut,
-  select, confirm, connectedOrgs, orgChoices, universe, ensureGh, repoSlug
+  select, confirm, connectedOrgs, orgChoices, universe, ensureGh, repoSlug, openUrl, removeTempDir
 } from "../lib/util.mjs";
 import { deployAppToAll, grantManager, loadData, recordSeeded, alreadySeeded } from "./seed.mjs";
 import { REQUIRED_CHECKS, protectBranches, withProtectionLifted } from "../lib/protection.mjs";
@@ -54,6 +54,8 @@ const DURATION_DAYS = 30;
 // preprod is created by the release manager in Lab 3.1, from main.
 const PIPELINE_BRANCHES = ["integration", "uat"];
 const STEPS = 8;
+// How long step 2 waits for the learner to click the Actions banner of a new fork.
+const ACTIONS_WAIT_MINUTES = 10;
 
 /** The orgs this command owns, read from the universe so the labs and the code agree. */
 function trainingOrgs() {
@@ -194,7 +196,7 @@ export async function ensureDevHub(alias) {
     ["project", "deploy", "start", "--metadata-dir", dir, "--target-org", alias, "--wait", "10", "--json"],
     { quiet: true, capture: true }
   );
-  fs.rmSync(dir, { recursive: true, force: true });
+  removeTempDir(dir);
   if (res.code !== 0) {
     const json = parseJsonOutput(res.stdout);
     warn(json?.message || (res.stderr || res.stdout).trim().split("\n").slice(-5).join("\n"));
@@ -426,10 +428,40 @@ async function ensureFork(handle) {
     // No --default-branch-only: this course needs every branch, and that option
     // is the single most common way a learner ends up with a fork that cannot
     // work. The web form calls it "Copy the main branch only".
-    const res = run("gh", ["repo", "fork", UPSTREAM, "--clone=false", "--remote=false"]);
+    // No --remote either: gh refuses that flag (any value) once a repository is
+    // named, before it contacts GitHub. Named, it adds no remote anyway, and the
+    // remotes are set below.
+    // Captured, because the panel only shows what goes through info() and warn():
+    // what gh prints itself lands in an output channel nobody has open.
+    const res = run("gh", ["repo", "fork", UPSTREAM, "--clone=false"], { capture: true });
     if (res.code !== 0) {
-      abort("The fork could not be created.", "Fork it by hand on GitHub, then run this again.");
+      // Three lines and a link beat "fork it by hand": the web form has one box
+      // that has to be unticked, and a learner who misses it gets a fork the
+      // course cannot work in.
+      warn("The fork could not be created from here.");
+      // gh's own words first: a local error must not read as "GitHub refused it"
+      const said = (res.stderr || res.stdout).trim();
+      if (said) {
+        info("");
+        info("  The GitHub CLI said:");
+        for (const line of said.split(/\r?\n/)) {
+          info(`    ${line}`);
+        }
+      }
+      info("");
+      info("  When GitHub refuses it, the usual reasons are a repository of that name");
+      info("  already in your account, an organisation that does not allow forks, or a");
+      info("  sign-in without permission to create repositories.");
+      info("");
+      info("  Make it yourself, it is one screen:");
+      info(`    1. Open ${c.cyan(`https://github.com/${UPSTREAM}/fork`)}`);
+      info("    2. Leave the owner on your own account and the name as it is");
+      info(`    3. ${c.bold('Untick "Copy the main branch only"')}. The course needs every branch`);
+      info("    4. Click Create fork, and wait for the page to land on your copy");
+      info("");
+      abort("The fork could not be created.", "Make it as described above, then run this again.");
     }
+    ok(`Your fork is ${c.bold(fork)}.`);
   }
 
   // The clone was made from the shared repository, so origin still points there
@@ -479,32 +511,121 @@ export function ensurePipelineBranches() {
 }
 
 // ------------------------------------------------------------- actions on
-function ensureActions(slug) {
+// The workflow files of the fork, read from its default branch, or null when
+// they cannot be read. One name per line rather than JSON: the contents API
+// answers with an array, and parseJsonOutput reads objects only.
+function workflowFiles(slug) {
+  const res = run("gh", ["api", `repos/${slug}/contents/.github/workflows`, "-q", ".[].name"], {
+    capture: true,
+    quiet: true
+  });
+  if (res.code !== 0) {
+    return null;
+  }
+  return res.stdout
+    .split(/\r?\n/)
+    .map((name) => name.trim())
+    .filter((name) => /\.ya?ml$/.test(name));
+}
+
+/**
+ * Every workflow of the fork that GitHub parked, put back to work.
+ *
+ * A fork arrives with Actions allowed and its workflows in `disabled_fork`,
+ * which is a different switch from the repository permission above. It has an
+ * API of its own: enable each parked workflow, then read them back.
+ *
+ * A brand new fork is one step earlier: it lists no workflow at all, because
+ * GitHub registers them only once the owner clicks the banner of the Actions
+ * tab, and that banner has no API. An empty list next to workflow files is that
+ * banner, not a fork with nothing left to enable: reading it as success is how
+ * the push of step 7 started no job at all.
+ *
+ * Returns { parked, banner }: the names still parked, empty when they all run,
+ * and whether the banner is what holds them. Returns null when GitHub could not
+ * be read, which says nothing either way.
+ */
+function enableForkWorkflows(slug) {
+  const listed = ghJson(["api", `repos/${slug}/actions/workflows`, "--paginate"]);
+  if (!Array.isArray(listed?.workflows)) {
+    return null;
+  }
+  const workflows = listed.workflows;
+  if (workflows.length === 0) {
+    const files = workflowFiles(slug);
+    return files === null ? null : { parked: files, banner: files.length > 0 };
+  }
+  for (const workflow of workflows) {
+    if (workflow.state === "active") {
+      continue;
+    }
+    run("gh", ["api", "-X", "PUT", `repos/${slug}/actions/workflows/${workflow.id}/enable`], {
+      capture: true,
+      quiet: true
+    });
+  }
+  const after = ghJson(["api", `repos/${slug}/actions/workflows`, "--paginate"]);
+  // A read that fails says nothing either way, and claiming success on it is
+  // how a learner ends up with a Pull Request nothing ever checks
+  const read = Array.isArray(after?.workflows) ? after.workflows : workflows;
+  const parked = read.filter((workflow) => workflow.state !== "active").map((workflow) => workflow.name);
+  return { parked, banner: false };
+}
+
+async function ensureActions(slug, { wait = true } = {}) {
   step(2, "Actions turned on");
 
   const permissions = ghJson(["api", `repos/${slug}/actions/permissions`]);
-  if (permissions?.enabled === true) {
-    ok("Actions are on.");
+  if (permissions?.enabled !== true) {
+    run("gh", [
+      "api", "-X", "PUT", `repos/${slug}/actions/permissions`,
+      "-F", "enabled=true", "-f", "allowed_actions=all"
+    ], { capture: true, quiet: true });
+  }
+
+  const enabled = ghJson(["api", `repos/${slug}/actions/permissions`])?.enabled === true;
+  let state = enabled ? enableForkWorkflows(slug) : null;
+
+  // The banner has no API: the learner clicks it, and this waits for that
+  // click. Now rather than at the end, because step 7 pushes to integration and
+  // that push only starts its deployment job once the workflows run. Only for
+  // the banner: a workflow GitHub refused to enable has no banner to click.
+  if (wait && state?.banner) {
+    const url = `https://github.com/${slug}/actions`;
+    info("    GitHub keeps the workflows of a new fork switched off until you say otherwise.");
+    info(`    Your browser opens ${c.cyan(url)}: click`);
+    info(`    ${c.bold("I understand my workflows, go ahead and enable them")}, then come back here.`);
+    openUrl(url);
+    info(c.dim(`    Waiting for that click, up to ${ACTIONS_WAIT_MINUTES} minutes...`));
+    const until = Date.now() + ACTIONS_WAIT_MINUTES * 60 * 1000;
+    while (state?.parked.length !== 0 && Date.now() < until) {
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      // A read that fails, a network blip or a rate limit, keeps what was known
+      state = enableForkWorkflows(slug) || state;
+    }
+  }
+
+  const parked = state?.parked || [];
+  if (enabled && state && parked.length === 0) {
+    ok("Actions are on, and every workflow of your fork runs.");
     return true;
   }
 
-  const res = run("gh", [
-    "api", "-X", "PUT", `repos/${slug}/actions/permissions`,
-    "-F", "enabled=true", "-f", "allowed_actions=all"
-  ], { capture: true, quiet: true });
-
-  const after = ghJson(["api", `repos/${slug}/actions/permissions`]);
-  if (res.code === 0 && after?.enabled === true) {
-    ok("Actions are on.");
-    return true;
-  }
-
-  // GitHub disables workflows on a new fork behind a banner that has no API.
-  // Saying so is better than reporting a success nobody can verify.
-  warn("Actions could not be turned on from here.");
-  info(`    Open https://github.com/${slug}/actions and click`);
+  // Two different switches, and the second one is the one a learner meets as an
+  // empty Checks tab on a Pull Request that looks perfectly fine.
+  warn(
+    !enabled
+      ? "Actions could not be turned on from here."
+      : state
+        ? `Actions are on, but ${parked.length} workflow(s) are still parked: ${parked.join(", ")}.`
+        : "Actions are on, but GitHub did not say whether the workflows of your fork run."
+  );
+  info(`    Open ${c.cyan(`https://github.com/${slug}/actions`)} and click`);
   info(`    ${c.bold("I understand my workflows, go ahead and enable them")}.`);
-  info("    It is one click, and then this command has nothing left to do.");
+  info("    It is one click. Then run this command again, which checks that they run.");
+  info("");
+  info("    If a Pull Request is already open, its checks will not start on their own");
+  info(`    afterwards. Run ${c.bold("Training > Trigger my workflows")} once and they will.`);
   return false;
 }
 
@@ -664,7 +785,7 @@ export function setSecrets(slug, pipeline) {
     ok(`${secret} is set on ${c.bold(slug)}.`);
   }
   info(c.dim("    Each holds a long-lived refresh token for a throwaway scratch org."));
-  info(c.dim("    Lab 3.1 replaces them with JWT certificates and deletes them."));
+  info(c.dim("    Lab 3.1 uses JWT certificates for preprod and main, and leaves these two as they are."));
 }
 
 // --------------------------------------------------------------------- main
@@ -705,7 +826,8 @@ export default async function init(args) {
   }
 
   const slug = await ensureFork(handle);
-  const actionsOn = ensureActions(slug);
+  // --no-actions-wait: for automation with no browser, where nobody can click the banner
+  const actionsOn = await ensureActions(slug, { wait: args["no-actions-wait"] !== true });
 
   step(3, "Your Dev Hub");
   await ensureDevHub(devHub);
@@ -721,8 +843,10 @@ export default async function init(args) {
   // job of integration straight away: written after, the job runs with no
   // credential and the learner's pipeline is red before Lab 1.3.
   step(6, "The credentials the CI jobs use");
-  // Once Lab 3.1 moved the pipeline to JWT and deleted the auth URL secrets, running
-  // this again, to rebuild an expired scratch org, must not bring the shortcut back
+  // Lab 3.1 moves only preprod and main to JWT, and integration and uat keep these
+  // secrets: running this again, to rebuild an expired scratch org, writes them
+  // again. A fork that walked the earlier Lab 3.1 moved all four branches to JWT
+  // (encryptedCert) and deleted the secrets, and must not get the shortcut back.
   const projectConfig = gitOut(["show", `origin/${pipeline[0].branch}:config/.sfdx-hardis.yml`]);
   if (/^orgAuthenticationMode:[ \t]*["']?encryptedCert/m.test(projectConfig)) {
     ok("The pipeline logs in with JWT keys since Lab 3.1: no auth URL secret is written.");

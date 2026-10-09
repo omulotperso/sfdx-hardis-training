@@ -5,17 +5,17 @@ description: "Vous avez publié bien plus que votre story. Voyez ce que cela fai
 level: 2
 lab: 8
 lang: fr
-source_rev: "4661bc03d2558cec0b10dc8f320de2e8a4617d66"
+source_rev: "76638d6bc8fedd4ecbcb798f9b026bb80023e7bd"
 screenshots:
   - annotated/vscode/pipeline-cards--new-user-story
   - annotated/vscode/metadata-retriever-recent-changes--select-all
   - annotated/vscode/sidebar
   - annotated/vscode/pipeline-cards--save-publish
 depends_on:
-  commands: [hardis:work:resetselection, hardis:work:save]
-  flags: []
+  commands: [hardis:mdapi:read, hardis:work:resetselection, hardis:work:save]
+  flags: [--active-only]
   config: []
-  panels: [commandExecution, packageXml]
+  panels: [metadataRetriever, commandExecution, packageXml]
   docs: [salesforce-devops-publish-user-story, salesforce-devops-manual-repo-clean]
 ---
 
@@ -63,15 +63,19 @@ Récupérez-les toutes, commitez-les toutes depuis **Source Control**, publiez e
 
 ![Le Metadata Retriever, avec toutes les lignes sélectionnées](../../_assets/annotated/vscode/metadata-retriever-recent-changes--select-all.png)
 
+Dans une org où Agentforce est activé, la liste peut aussi porter des lignes `GenOpAgentConfig`, aux
+noms de vos flows. Salesforce CLI ne connaît pas encore ce type, donc la récupération s'arrête et le
+nomme : décochez ces lignes et relancez la récupération.
+
 ### 2. Regarder ce que vous avez fait
 
 Regardez le rapport **Git Delta package.xml** que la publication a proposé : bien plus que l'unique
 présentation de page que votre story a modifiée. Ouvrez la Pull Request et lisez le diff.
 
 Au minimum il y a **un profil**, `Admin`, le profil System Administrator. Le repository le porte
-court, quelques lignes, et il est revenu long de plusieurs milliers de lignes : chaque champ que
-vous avez créé dans Setup depuis le Niveau 1 a donné à ce profil une sécurité au niveau du champ, et
-une récupération de toute l'org ramène tout cela avec. Ce qui vient d'autre dépend de ce qu'a vécu
+court, quelques lignes, et il est revenu plus long de plusieurs centaines de lignes : le Metadata
+Retriever récupère un profil en entier, chaque permission, onglet et mise en page qu'il a dans
+votre org, et rien de tout cela n'est votre story. Ce qui vient d'autre dépend de ce qu'a vécu
 votre org, et une récupération de toute l'org sur un vrai projet en emporte généralement une partie
 :
 
@@ -119,12 +123,17 @@ vous n'est perdu : la modification est dans Salesforce, et le fichier est toujou
 
 ### 4. Traiter ce que vous avez déjà poussé
 
+**Rien à cliquer dans cette étape.** C'est une décision à prendre avant l'étape 5, et dans ce lab
+elle est déjà prise pour vous : personne n'a relu votre Pull Request, vous êtes donc dans le premier
+cas ci-dessous, et l'étape 5 fait ce qu'elle dit. Lisez quand même le second cas, c'est celui dans
+lequel un vrai projet vous mettra.
+
 En local vous êtes propre. La branche sur GitHub ne l'est pas : elle porte encore le commit trop
 large, parce que la réinitialisation n'a changé que la copie de votre machine.
 
-**Personne ne l'a relue** (le cas normal) : poussez la branche corrigée par-dessus une fois que vous
-aurez republié à l'étape suivante. C'est ce que la réinitialisation a autorisé, et la publication le
-proposera. L'erreur disparaît de l'historique comme si elle n'avait jamais eu lieu, ce qui, sur votre
+**Personne ne l'a relue** (le cas normal, et le vôtre ici) : la branche corrigée passe par-dessus
+quand vous republiez à l'étape 5. C'est ce que la réinitialisation a autorisé, et la publication le
+fait sans demander. L'erreur disparaît de l'historique comme si elle n'avait jamais eu lieu, ce qui, sur votre
 propre branche de feature avant relecture, est exactement ce que vous voulez.
 
 **Quelqu'un l'a déjà relue**, ou la branche est partagée : ne faites pas de force push. Réécrire
@@ -139,7 +148,7 @@ l'erreur et sa correction, les deux visibles.
 
 ### 5. Publier à nouveau, correctement
 
-Tout ce que la récupération a fait descendre est toujours dans vos fichiers, non commité. Dans le
+Tout ce que le retrieve a rapatrié est toujours dans vos fichiers, non commité. Dans le
 panneau **Source Control**, stagez **un seul fichier**, la présentation de page. Commitez-le, puis
 jetez le reste : clic droit sur **Changes**, **Discard All Changes**.
 
@@ -188,6 +197,10 @@ clairement. Si votre org est en retard sur `integration` et que vous récupérez
 fichiers récupérés sont plus anciens que ce qui est sur `integration`, et le diff se lit comme
 "enlever ce qu'ils ont ajouté". Un backpromote avant de commencer ([Lab 2.1](2-1-backpromote-your-teammates-work.md)) est ce qui évite cela.
 
+<!-- command-links:start -->
+Documentation des commandes : [hardis:work:resetselection](https://sfdx-hardis.cloudity.com/hardis/work/resetselection/), [hardis:work:save](https://sfdx-hardis.cloudity.com/hardis/work/save/)
+<!-- command-links:end -->
+
 </details>
 
 ## Ce que vous devez voir
@@ -203,8 +216,8 @@ Publiez-les ou jetez-les d'abord dans le panneau **Source Control**, puis relanc
 réinitialisation.
 
 **Après la nouvelle publication, le rapport Git Delta nomme encore plusieurs composants.**
-Vous avez commité plus que la présentation de page après la réinitialisation. Tout ce que la
-récupération a fait descendre est toujours dans vos fichiers, et seul ce que vous commitez entre dans
+Vous avez commité plus que la présentation de page après la réinitialisation. Tout ce que le
+retrieve a rapatrié est toujours dans vos fichiers, et seul ce que vous commitez entre dans
 le package : réinitialisez à nouveau, et stagez un seul fichier.
 
 **Vous avez déjà mergé la mauvaise Pull Request.**
@@ -213,7 +226,7 @@ mergée, puis refaites la story proprement. N'essayez pas de réparer `integrati
 
 ## Vérifiez votre travail
 
-Welcome page > **Training: Level 2** > **Check my work**, puis choisissez le Lab 2.8.
+Welcome page > **Training: Level 2** > **Check my work**, puis choisissez le **Lab 2.8**.
 
 ## Pour aller plus loin
 
