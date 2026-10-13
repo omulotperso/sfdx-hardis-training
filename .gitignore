@@ -62,3 +62,5 @@ mkdocs.yml
 
 # Provider tokens for terminals and agents, never committed
 .env
+sfdx-hardis-training-monitoring/
+sfdx-hardis-training-monitoring/
